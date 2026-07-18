@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanaBox Config Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b10;
+    --surface: #0e1319;
+    --surface2: #141c25;
+    --border: #1e2a38;
+    --border2: #243040;
+    --accent: #00d4ff;
+    --accent2: #0077ff;
+    --accent-dim: #00d4ff22;
+    --text: #c8d8e8;
+    --text-muted: #5a7a96;
+    --text-dim: #3a5a76;
+    --success: #00e5a0;
+    --warn: #ffb300;
+    --danger: #ff4466;
+    --json-key: #79c0ff;
+    --json-str: #a5d6ff;
+    --json-num: #f0b429;
+    --json-bool: #ff7b72;
+    --json-null: #8b949e;
+    --radius: 6px;
+    --sidebar-w: 210px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 14px; scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo-box {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-text {
+    font-size: 16px; font-weight: 800; letter-spacing: -0.3px;
+    color: #fff;
+  }
+  .logo-text span { color: var(--accent); }
+  .header-sub {
+    color: var(--text-muted); font-size: 12px; margin-left: 4px;
+    letter-spacing: 0.5px;
+  }
+  header .spacer { flex: 1; }
+  .header-link {
+    color: var(--text-muted); text-decoration: none; font-size: 12px;
+    padding: 5px 10px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: all .2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .header-link:hover { color: var(--accent); border-color: var(--accent); }
+  .btn-import {
+    color: var(--text-muted); font-size: 12px;
+    padding: 5px 10px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: none; cursor: pointer;
+    transition: all .2s;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-import:hover { color: var(--success); border-color: var(--success); background: rgba(0,229,160,.07); }
+
+  /* ── TOAST ── */
+  #toast-container {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 9999; pointer-events: none;
+  }
+  .toast {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 12px 16px;
+    font-size: 12px; max-width: 340px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    animation: toastIn .25s ease;
+    pointer-events: all;
+  }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+  .toast.warn { border-color: var(--warn); }
+  .toast-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .toast-body { flex: 1; }
+  .toast-title { font-weight: 700; color: #fff; margin-bottom: 3px; }
+  .toast-msg { color: var(--text-muted); line-height: 1.5; }
+  .toast-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 0; flex-shrink: 0; }
+  .toast-close:hover { color: var(--text); }
+  @keyframes toastIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+  @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateX(20px); } }
+
+  /* ── DROP OVERLAY ── */
+  #drop-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(8,11,16,.85);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #drop-overlay.active { display: flex; }
+  .drop-box {
+    border: 2px dashed var(--accent);
+    border-radius: 16px;
+    padding: 60px 80px;
+    text-align: center;
+    background: rgba(0,212,255,.05);
+    animation: dropPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes dropPulse { 0%,100%{border-color:var(--accent);} 50%{border-color:var(--accent2);} }
+  .drop-icon { font-size: 56px; margin-bottom: 16px; }
+  .drop-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  .drop-sub { font-size: 13px; color: var(--text-muted); }
+
+  /* ── IMPORT SUMMARY MODAL ── */
+  #import-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(8,11,16,.8);
+    backdrop-filter: blur(6px);
+    z-index: 600;
+    align-items: center; justify-content: center;
+  }
+  #import-modal.active { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    width: 480px; max-height: 80vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 16px 20px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .modal-title { font-size: 15px; font-weight: 800; color: #fff; flex: 1; }
+  .modal-close {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 18px; padding: 0;
+    transition: color .15s;
+  }
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 10px; justify-content: flex-end;
+  }
+  .btn-modal-cancel {
+    background: none; border: 1px solid var(--border2);
+    color: var(--text-muted); border-radius: var(--radius);
+    padding: 8px 18px; cursor: pointer; font-family: 'Syne', sans-serif;
+    font-size: 13px; font-weight: 600; transition: all .15s;
+  }
+  .btn-modal-cancel:hover { border-color: var(--text-muted); color: var(--text); }
+  .btn-modal-confirm {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: var(--radius);
+    color: #000; font-size: 13px; font-weight: 800;
+    padding: 8px 18px; cursor: pointer; font-family: 'Syne', sans-serif;
+    transition: opacity .15s;
+  }
+  .btn-modal-confirm:hover { opacity: .85; }
+  .summary-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: var(--text-muted); width: 160px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+  .summary-val { color: var(--text); font-family: 'JetBrains Mono', monospace; word-break: break-all; }
+  .summary-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; margin-left: 4px;
+  }
+  .badge-ok { background: rgba(0,229,160,.15); color: var(--success); border: 1px solid rgba(0,229,160,.3); }
+  .badge-warn { background: rgba(255,179,0,.12); color: var(--warn); border: 1px solid rgba(255,179,0,.3); }
+  .parse-error {
+    background: rgba(255,68,102,.08); border: 1px solid rgba(255,68,102,.25);
+    border-radius: var(--radius); padding: 14px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--danger);
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 54px);
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  nav {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 12px 0;
+  }
+  nav::-webkit-scrollbar { width: 4px; }
+  nav::-webkit-scrollbar-track { background: transparent; }
+  nav::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .nav-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-dim); padding: 8px 16px 4px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-size: 13px; font-weight: 600;
+    color: var(--text-muted);
+    border-left: 2px solid transparent;
+    transition: all .15s;
+  }
+  .nav-item:hover { color: var(--text); background: var(--accent-dim); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .nav-icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto; background: var(--accent2);
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 10px; font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── MAIN FORM ── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    background: var(--bg);
+  }
+  main::-webkit-scrollbar { width: 6px; }
+  main::-webkit-scrollbar-track { background: transparent; }
+  main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .section {
+    display: none;
+    animation: fadeIn .2s ease;
+  }
+  .section.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .section-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .section-title { font-size: 20px; font-weight: 800; color: #fff; }
+  .section-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-weight: 700; font-size: 13px; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-body { padding: 16px; }
+
+  /* fields */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field-grid-1 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.3px; display: flex; align-items: center; gap: 6px;
+  }
+  .field-label .opt { color: var(--text-dim); font-weight: 400; font-size: 11px; }
+  .field-hint { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  input[type=text], input[type=number], select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+  }
+  select option { background: var(--surface2); }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* toggle */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-info { flex: 1; }
+  .toggle-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .toggle-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .toggle {
+    position: relative; width: 40px; height: 22px; flex-shrink: 0; margin-left: 12px;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 11px; cursor: pointer; transition: all .2s;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute;
+    width: 16px; height: 16px; left: 2px; top: 2px;
+    background: var(--text-dim); border-radius: 50%; transition: all .2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--accent2); border-color: var(--accent2); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(18px); background: #fff; }
+
+  /* array items */
+  .array-list { display: flex; flex-direction: column; gap: 10px; }
+  .array-item {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .array-item-header {
+    padding: 8px 12px;
+    background: rgba(0,100,200,.08);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--text-muted);
+  }
+  .array-item-body { padding: 12px; }
+  .btn-remove {
+    margin-left: auto; background: none; border: 1px solid var(--danger);
+    color: var(--danger); border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    transition: all .15s;
+  }
+  .btn-remove:hover { background: var(--danger); color: #fff; }
+  .btn-add {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent-dim); border: 1px dashed var(--accent);
+    color: var(--accent); border-radius: var(--radius);
+    padding: 8px 14px; font-size: 12px; font-weight: 700;
+    cursor: pointer; width: 100%;
+    font-family: 'Syne', sans-serif;
+    transition: all .2s; margin-top: 10px;
+    justify-content: center;
+  }
+  .btn-add:hover { background: var(--accent); color: #000; }
+
+  /* policies */
+  .policy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .policy-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); cursor: pointer;
+    transition: all .15s;
+  }
+  .policy-item:hover { border-color: var(--accent2); }
+  .policy-item input[type=checkbox] { accent-color: var(--accent2); width: 14px; height: 14px; }
+  .policy-item label { font-size: 12px; font-family: 'JetBrains Mono', monospace; cursor: pointer; }
+
+  /* ── JSON PREVIEW ── */
+  .preview-panel {
+    width: 380px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .preview-header {
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .preview-title { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+  .preview-badge {
+    background: var(--success); color: #000;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .btn-download {
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none; border-radius: var(--radius);
+    color: #000; font-size: 12px; font-weight: 800;
+    padding: 7px 14px; cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    letter-spacing: 0.3px;
+    transition: opacity .15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-download:hover { opacity: .85; }
+  .preview-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+  .preview-body::-webkit-scrollbar { width: 4px; }
+  .preview-body::-webkit-scrollbar-thumb { background: var(--border2); }
+  pre { white-space: pre-wrap; word-break: break-word; }
+  .jk { color: var(--json-key); }
+  .js { color: var(--json-str); }
+  .jn { color: var(--json-num); }
+  .jb { color: var(--json-bool); }
+  .jp { color: var(--text-dim); }
+
+  /* file info */
+  .preview-footer {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .4; }
+  }
+
+  /* separator */
+  .sep { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* info box */
+  .info-box {
+    background: rgba(0,212,255,.06);
+    border: 1px solid rgba(0,212,255,.2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px; color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex; gap: 8px;
+  }
+  .info-box .icon { flex-shrink: 0; }
+  .warn-box {
+    background: rgba(255,179,0,.06);
+    border: 1px solid rgba(255,179,0,.2);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px; color: var(--warn);
+    margin-bottom: 14px;
+  }
+
+  /* input with copy button */
+  .input-row { display: flex; gap: 6px; }
+  .input-row input { flex: 1; }
+  .btn-gen {
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--accent); border-radius: var(--radius);
+    padding: 0 10px; cursor: pointer; font-size: 11px;
+    font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+    transition: all .15s;
+  }
+  .btn-gen:hover { border-color: var(--accent); }
+  .btn-browse {
+    background: var(--surface2); border: 1px solid var(--border2);
+    color: var(--text-muted); border-radius: var(--radius);
+    padding: 0 11px; cursor: pointer; font-size: 15px;
+    transition: all .15s; flex-shrink: 0; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-browse:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .toast-msg code { font-family: 'JetBrains Mono',monospace; font-size: 10.5px; background: rgba(255,255,255,.08); padding: 1px 4px; border-radius: 3px; }
+
+  /* drives inline */
+  .drives-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .drive-chip {
+    display: flex; align-items: center; gap: 4px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 4px; padding: 4px 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+  .drive-chip input[type=checkbox] { accent-color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-box">
+    <div class="logo-icon">⬡</div>
+    <div>
+      <div class="logo-text">Nana<span>Box</span> Config</div>
+    </div>
+  </div>
+  <span class="header-sub">// .7b Generator</span>
+  <span class="spacer"></span>
+  <button class="btn-import" onclick="document.getElementById('import-file-input').click()">⬆ Importieren</button>
+  <a class="header-link" href="https://github.com/M2Team/NanaBox/blob/main/Documents/ConfigurationReference.md" target="_blank">📄 Reference</a>
+  <input type="file" id="import-file-input" accept=".7b,.json" style="display:none" onchange="handleFileInput(this)">
+</header>
+
+<!-- DROP OVERLAY -->
+<div id="drop-overlay">
+  <div class="drop-box">
+    <div class="drop-icon">📂</div>
+    <div class="drop-title">Datei loslassen</div>
+    <div class="drop-sub">.7b Konfigurationsdatei importieren</div>
+  </div>
+</div>
+
+<!-- IMPORT SUMMARY MODAL -->
+<div id="import-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span style="font-size:18px">📥</span>
+      <div class="modal-title">Import-Vorschau</div>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body-content"></div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeImportModal()">Abbrechen</button>
+      <button class="btn-modal-confirm" onclick="confirmImport()">✓ Importieren & übernehmen</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="nav-section-label">Grundeinstellungen</div>
+    <div class="nav-item active" onclick="showSection('basic', this)">
+      <span class="nav-icon">💻</span> Basiseinstellungen
+    </div>
+    <div class="nav-item" onclick="showSection('storage', this)">
+      <span class="nav-icon">💾</span> Speichergeräte
+      <span class="nav-badge" id="badge-storage">0</span>
+    </div>
+    <div class="nav-item" onclick="showSection('network', this)">
+      <span class="nav-icon">🌐</span> Netzwerk
+      <span class="nav-badge" id="badge-network">0</span>
+    </div>
+    <div class="nav-item" onclick="showSection('gpu', this)">
+      <span class="nav-icon">🎮</span> GPU
+    </div>
+    <div class="nav-section-label" style="margin-top:8px">Systemkonfiguration</div>
+    <div class="nav-item" onclick="showSection('security', this)">
+      <span class="nav-icon">🔒</span> Sicherheit
+    </div>
+    <div class="nav-item" onclick="showSection('comports', this)">
+      <span class="nav-icon">🔌</span> COM Ports
+    </div>
+    <div class="nav-item" onclick="showSection('statefiles', this)">
+      <span class="nav-icon">📁</span> State-Dateien
+    </div>
+    <div class="nav-item" onclick="showSection('video', this)">
+      <span class="nav-icon">🖥️</span> Videomonitor
+    </div>
+    <div class="nav-section-label" style="margin-top:8px">Erweitert</div>
+    <div class="nav-item" onclick="showSection('keyboard', this)">
+      <span class="nav-icon">⌨️</span> Tastatur
+    </div>
+    <div class="nav-item" onclick="showSection('enhanced', this)">
+      <span class="nav-icon">🔗</span> Enhanced Session
+    </div>
+    <div class="nav-item" onclick="showSection('chipset', this)">
+      <span class="nav-icon">🔧</span> Chipsatz
+    </div>
+    <div class="nav-item" onclick="showSection('policies', this)">
+      <span class="nav-icon">📋</span> Policies
+    </div>
+    <div class="nav-item" onclick="showSection('shares', this)">
+      <span class="nav-icon">📂</span> Shares
+      <span class="nav-badge" id="badge-shares">0</span>
+    </div>
+  </nav>
+
+  <!-- MAIN FORM -->
+  <main id="main-content">
+
+    <!-- BASIC -->
+    <div class="section active" id="section-basic">
+      <div class="section-header">
+        <div class="section-icon">💻</div>
+        <div>
+          <div class="section-title">Basiseinstellungen</div>
+          <div class="section-desc">Name, Gast-Typ, CPU und RAM konfigurieren</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">🏷️ VM Identität</div>
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field">
+              <label class="field-label">VM-Name <span class="opt">(required)</span></label>
+              <input type="text" id="vm-name" placeholder="MeineVM" oninput="updatePreview(); updateStatePlaceholders()">
+              <div class="field-hint">Eindeutiger Name der virtuellen Maschine</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Gast-Betriebssystem</label>
+              <select id="guest-type" onchange="updatePreview()">
+                <option value="Windows">Windows</option>
+                <option value="Linux">Linux</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">⚡ Ressourcen</div>
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field">
+              <label class="field-label">CPU-Kerne</label>
+              <input type="number" id="cpu-count" value="2" min="1" max="128" oninput="updatePreview()">
+              <div class="field-hint">Anzahl virtueller Prozessorkerne</div>
+            </div>
+            <div class="field">
+              <label class="field-label">Arbeitsspeicher (MB)</label>
+              <input type="number" id="mem-size" value="4096" min="512" step="512" oninput="updatePreview()">
+              <div class="field-hint">z.B. 2048 = 2 GB · 4096 = 4 GB · 8192 = 8 GB</div>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div style="display:flex;gap:12px;font-size:12px;color:var(--text-muted)">
+            <div>💡 Schnellauswahl RAM:</div>
+            <span onclick="setMem(1024)" style="color:var(--accent);cursor:pointer">1 GB</span>
+            <span onclick="setMem(2048)" style="color:var(--accent);cursor:pointer">2 GB</span>
+            <span onclick="setMem(4096)" style="color:var(--accent);cursor:pointer">4 GB</span>
+            <span onclick="setMem(8192)" style="color:var(--accent);cursor:pointer">8 GB</span>
+            <span onclick="setMem(16384)" style="color:var(--accent);cursor:pointer">16 GB</span>
+            <span onclick="setMem(32768)" style="color:var(--accent);cursor:pointer">32 GB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STORAGE -->
+    <div class="section" id="section-storage">
+      <div class="section-header">
+        <div class="section-icon">💾</div>
+        <div>
+          <div class="section-title">Speichergeräte (SCSI)</div>
+          <div class="section-desc">Virtuelle Festplatten, ISO-Images und physische Laufwerke</div>
+        </div>
+      </div>
+      <div class="info-box"><span class="icon">ℹ️</span> Unterstützte Typen: <strong>VirtualDisk</strong> (.vhdx, .vhd) · <strong>VirtualImage</strong> (.iso) · <strong>PhysicalDevice</strong> (\\.\PhysicalDriveX)</div>
+      <div class="array-list" id="scsi-list"></div>
+      <button class="btn-add" onclick="addScsiDevice()">＋ SCSI-Gerät hinzufügen</button>
+    </div>
+
+    <!-- NETWORK -->
+    <div class="section" id="section-network">
+      <div class="section-header">
+        <div class="section-icon">🌐</div>
+        <div>
+          <div class="section-title">Netzwerkadapter</div>
+          <div class="section-desc">Virtuelle Netzwerkschnittstellen konfigurieren</div>
+        </div>
+      </div>
+      <div class="array-list" id="net-list"></div>
+      <button class="btn-add" onclick="addNetAdapter()">＋ Netzwerkadapter hinzufügen</button>
+    </div>
+
+    <!-- GPU -->
+    <div class="section" id="section-gpu">
+      <div class="section-header">
+        <div class="section-icon">🎮</div>
+        <div>
+          <div class="section-title">GPU-Einstellungen</div>
+          <div class="section-desc">GPU-Paravirtualisierung und Partitionierung</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🎯 Zuweisungsmodus</div>
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field">
+              <label class="field-label">Assignment Mode</label>
+              <select id="gpu-mode" onchange="gpuModeChanged(); updatePreview()">
+                <option value="Disabled">Disabled – Keine GPU</option>
+                <option value="Default">Default – Standard GPU (GPU-PV)</option>
+                <option value="Mirror" selected>Mirror – Alle GPUs (GPU-PV)</option>
+                <option value="List">List – Spezifische GPU(s)</option>
+              </select>
+            </div>
+          </div>
+          <div class="sep"></div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">EnableHostDriverStore</div>
+              <div class="toggle-desc">Readonly Plan 9 / SMB-Shares für GPU-PV-Ordner des Hosts freigeben</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="gpu-hostdriver" onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="gpu-devices-card" style="display:none">
+        <div class="card-header">🖥️ Ausgewählte Geräte (nur bei Modus "List")</div>
+        <div class="card-body">
+          <div class="warn-box">⚠️ Geräte-Interfaces aus dem Geräte-Manager oder PowerShell (Get-PnpDevice) ermitteln.</div>
+          <div class="array-list" id="gpu-device-list"></div>
+          <button class="btn-add" onclick="addGpuDevice()">＋ GPU-Gerät hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="section" id="section-security">
+      <div class="section-header">
+        <div class="section-icon">🔒</div>
+        <div>
+          <div class="section-title">Sicherheitsfeatures</div>
+          <div class="section-desc">Secure Boot, TPM und Virtualisierungserweiterungen</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Secure Boot</div>
+              <div class="toggle-desc">UEFI Secure Boot aktivieren (empfohlen für Windows 11)</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="sec-secureboot" checked onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">TPM 2.0 (Trusted Platform Module)</div>
+              <div class="toggle-desc">Virtuelles TPM aktivieren – benötigt Windows 11 24H2 Host oder neuer</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="sec-tpm" onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Virtualisierungserweiterungen (nested)</div>
+              <div class="toggle-desc">Intel VT-x / AMD-V an VM weitergeben (für Hyper-V in VM, etc.)</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="sec-virtex" onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COM PORTS -->
+    <div class="section" id="section-comports">
+      <div class="section-header">
+        <div class="section-icon">🔌</div>
+        <div>
+          <div class="section-title">COM Ports & UEFI Konsole</div>
+          <div class="section-desc">Serielle Schnittstellen und UEFI-Debug-Konsole</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="field-grid-1">
+            <div class="field">
+              <label class="field-label">UEFI Konsole</label>
+              <select id="com-uefi" onchange="updatePreview()">
+                <option value="Disabled" selected>Disabled</option>
+                <option value="Default">Default</option>
+                <option value="ComPort1">ComPort1</option>
+                <option value="ComPort2">ComPort2</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label">ComPort1 Pipe-Pfad <span class="opt">(optional)</span></label>
+              <input type="text" id="com-port1" placeholder="\\.\pipe\vmpipe1" oninput="updatePreview()">
+              <div class="field-hint">Named Pipe – z.B. für UEFI-Debugging mit WinDbg</div>
+            </div>
+            <div class="field">
+              <label class="field-label">ComPort2 Pipe-Pfad <span class="opt">(optional)</span></label>
+              <input type="text" id="com-port2" placeholder="\\.\pipe\vmpipe2" oninput="updatePreview()">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE FILES -->
+    <div class="section" id="section-statefiles">
+      <div class="section-header">
+        <div class="section-icon">📁</div>
+        <div>
+          <div class="section-title">State-Dateien</div>
+          <div class="section-desc">Pfade für Gast-, Laufzeit- und Speicherzustandsdateien</div>
+        </div>
+      </div>
+      <div class="info-box"><span class="icon">ℹ️</span> Relative Pfade werden unterstützt. Wenn leer, erstellt NanaBox automatisch neue Dateien.</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="field-grid-1">
+            <div class="field">
+              <label class="field-label">GuestStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span></label>
+              <div class="input-row">
+                <input type="text" id="state-guest" placeholder="MeineVM.vmgs" oninput="updatePreview()">
+                <button class="btn-gen" onclick="autoFillStateFiles()">Auto</button>
+              </div>
+              <div class="field-hint">Pflichtfeld – Standard: &lt;VM-Name&gt;.vmgs</div>
+            </div>
+            <div class="field">
+              <label class="field-label">RuntimeStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span></label>
+              <input type="text" id="state-runtime" placeholder="MeineVM.vmrs" oninput="updatePreview()">
+              <div class="field-hint">Pflichtfeld – Standard: &lt;VM-Name&gt;.vmrs</div>
+            </div>
+            <div class="field">
+              <label class="field-label">SaveStateFile <span class="opt">(optional, intern)</span></label>
+              <input type="text" id="state-save" placeholder="MeineVM.SaveState.vmrs" oninput="updatePreview()">
+              <div class="field-hint">Wird intern für Suspend/Resume verwendet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIDEO -->
+    <div class="section" id="section-video">
+      <div class="section-header">
+        <div class="section-icon">🖥️</div>
+        <div>
+          <div class="section-title">Videomonitor</div>
+          <div class="section-desc">Auflösung und DPI-Skalierung (ab NanaBox 1.5)</div>
+        </div>
+      </div>
+      <div class="info-box"><span class="icon">ℹ️</span> Auflösungseinstellungen gelten nur für den Basic Session Mode (kein Enhanced Session).</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field">
+              <label class="field-label">Horizontale Auflösung <span class="opt">(optional)</span></label>
+              <input type="number" id="vid-h" placeholder="1920" oninput="updatePreview()">
+            </div>
+            <div class="field">
+              <label class="field-label">Vertikale Auflösung <span class="opt">(optional)</span></label>
+              <input type="number" id="vid-v" placeholder="1080" oninput="updatePreview()">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:10px;font-size:12px;color:var(--text-muted)">
+            <div>Schnellauswahl:</div>
+            <span onclick="setRes(1280,720)" style="color:var(--accent);cursor:pointer">1280×720</span>
+            <span onclick="setRes(1920,1080)" style="color:var(--accent);cursor:pointer">1920×1080</span>
+            <span onclick="setRes(2560,1440)" style="color:var(--accent);cursor:pointer">2560×1440</span>
+            <span onclick="setRes(3840,2160)" style="color:var(--accent);cursor:pointer">4K</span>
+          </div>
+          <div class="sep"></div>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">DPI-Skalierung für Basic Session deaktivieren</div>
+              <div class="toggle-desc">DisableBasicSessionDpiScaling – ab NanaBox 1.5 Update 2</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="vid-nodpi" onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KEYBOARD -->
+    <div class="section" id="section-keyboard">
+      <div class="section-header">
+        <div class="section-icon">⌨️</div>
+        <div>
+          <div class="section-title">Tastatureinstellungen</div>
+          <div class="section-desc">Hotkeys und Tastenkombinationen (ab NanaBox 1.1)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">RedirectKeyCombinations</div>
+              <div class="toggle-desc">Tastenkombinationen an VM weiterleiten (immer, nicht nur im Vollbildmodus)</div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="kb-redirect" onchange="updatePreview()"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🎹 Hotkey-Ersetzungen (Virtual Key Code, dezimal)</div>
+        <div class="card-body">
+          <div class="info-box" style="margin-bottom:12px"><span class="icon">ℹ️</span> Diese Werte sind <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes" target="_blank" style="color:var(--accent)">Virtual-Key-Codes</a> als Dezimalzahlen. Leer = Standardverhalten.</div>
+          <div class="field-grid">
+            <div class="field"><label class="field-label">FullScreenHotkey</label><input type="number" id="kb-fs" placeholder="70 (F)" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Vollbild</div></div>
+            <div class="field"><label class="field-label">CtrlEscHotkey</label><input type="number" id="kb-ce" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → CTRL+ESC</div></div>
+            <div class="field"><label class="field-label">AltEscHotkey</label><input type="number" id="kb-ae" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+ESC</div></div>
+            <div class="field"><label class="field-label">AltTabHotkey</label><input type="number" id="kb-at" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+TAB</div></div>
+            <div class="field"><label class="field-label">AltShiftTabHotkey</label><input type="number" id="kb-ast" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+SHIFT+TAB</div></div>
+            <div class="field"><label class="field-label">AltSpaceHotkey</label><input type="number" id="kb-as" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+SPACE</div></div>
+            <div class="field"><label class="field-label">CtrlAltDelHotkey</label><input type="number" id="kb-cad" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → CTRL+ALT+DEL</div></div>
+            <div class="field"><label class="field-label">FocusReleaseLeftHotkey</label><input type="number" id="kb-frl" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Fokus freigeben links</div></div>
+            <div class="field"><label class="field-label">FocusReleaseRightHotkey</label><input type="number" id="kb-frr" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Fokus freigeben rechts</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENHANCED SESSION -->
+    <div class="section" id="section-enhanced">
+      <div class="section-header">
+        <div class="section-icon">🔗</div>
+        <div>
+          <div class="section-title">Enhanced Session</div>
+          <div class="section-desc">RDP-basierte Umleitung von Geräten und Ressourcen (ab NanaBox 1.1)</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🔊 Audio & Zwischenablage</div>
+        <div class="card-body">
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Audio umleiten</div><div class="toggle-desc">Sound von VM zum Host weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-audio" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Mikrofon umleiten</div><div class="toggle-desc">Audioaufnahme vom Host zur VM</div></div><label class="toggle"><input type="checkbox" id="es-audiocap" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Zwischenablage teilen</div><div class="toggle-desc">Copy/Paste zwischen Host und VM</div></div><label class="toggle"><input type="checkbox" id="es-clipboard" checked onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">💿 Laufwerke & Geräte</div>
+        <div class="card-body">
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Alle Laufwerke umleiten</div><div class="toggle-desc">Alle Festplatten des Hosts in VM verfügbar machen</div></div><label class="toggle"><input type="checkbox" id="es-drives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Drucker umleiten</div><div class="toggle-desc">Host-Drucker in VM verwenden</div></div><label class="toggle"><input type="checkbox" id="es-printers" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ports umleiten</div><div class="toggle-desc">COM- und LPT-Ports weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-ports" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Smartcards umleiten</div></div><label class="toggle"><input type="checkbox" id="es-smartcard" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Alle Geräte umleiten</div></div><label class="toggle"><input type="checkbox" id="es-devices" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">POS-Geräte umleiten</div><div class="toggle-desc">Point-of-Service-Geräte</div></div><label class="toggle"><input type="checkbox" id="es-pos" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Dynamische Laufwerke (PnP)</div><div class="toggle-desc">Nachträglich angesteckte Laufwerke weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-dyndrives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Dynamische Geräte (PnP)</div><div class="toggle-desc">Nachträglich angesteckte Geräte weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-dyndev" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🗂️ Spezifische Laufwerke (Drives Array)</div>
+        <div class="card-body">
+          <div class="field-hint" style="margin-bottom:8px">Einzelne Laufwerksbuchstaben auswählen:</div>
+          <div class="drives-row" id="drives-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHIPSET -->
+    <div class="section" id="section-chipset">
+      <div class="section-header">
+        <div class="section-icon">🔧</div>
+        <div>
+          <div class="section-title">Chipsatz / SMBIOS</div>
+          <div class="section-desc">SMBIOS-Felder für erweiterte OEM-Emulation (ab NanaBox 1.2 Update 4)</div>
+        </div>
+      </div>
+      <div class="warn-box">⚠️ Die meisten Felder benötigen Windows Server 2022 oder neueren Host. Leer = NanaBox-Standard.</div>
+      <div class="card">
+        <div class="card-header">🏭 Hersteller & Produkt</div>
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field"><label class="field-label">Manufacturer <span class="opt">(opt.)</span></label><input type="text" id="ci-mfr" placeholder="Microsoft Corporation" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">ProductName <span class="opt">(opt.)</span></label><input type="text" id="ci-prod" placeholder="Virtual Machine" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">Version <span class="opt">(opt.)</span></label><input type="text" id="ci-ver" placeholder="Hyper-V UEFI Release v4.1" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">Family <span class="opt">(opt.)</span></label><input type="text" id="ci-fam" placeholder="Virtual Machine" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">SKUNumber <span class="opt">(opt.)</span></label><input type="text" id="ci-sku" placeholder="" oninput="updatePreview()"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🔢 Seriennummern & UUID</div>
+        <div class="card-body">
+          <div class="field-grid">
+            <div class="field"><label class="field-label">SerialNumber <span class="opt">(opt.)</span></label><input type="text" id="ci-sn" placeholder="QTFCOU0000001" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">BaseBoardSerialNumber <span class="opt">(opt.)</span></label><input type="text" id="ci-bbsn" placeholder="QTFCOU0000001" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">ChassisSerialNumber <span class="opt">(opt.)</span></label><input type="text" id="ci-cssn" placeholder="QTFCOU0000001" oninput="updatePreview()"></div>
+            <div class="field"><label class="field-label">ChassisAssetTag <span class="opt">(opt.)</span></label><input type="text" id="ci-cat" placeholder="" oninput="updatePreview()"></div>
+            <div class="field" style="grid-column:span 2">
+              <label class="field-label">UUID <span class="opt">(opt.)</span></label>
+              <div class="input-row">
+                <input type="text" id="ci-uuid" placeholder="12345678-abcd-efgh-ijkl-0123456789ab" oninput="updatePreview()">
+                <button class="btn-gen" onclick="genUUID()">Generieren</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POLICIES -->
+    <div class="section" id="section-policies">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div>
+          <div class="section-title">Policies</div>
+          <div class="section-desc">Erweiterte Kompatibilitäts-Flags (ab NanaBox 1.5, benötigt Windows 11 24H2+)</div>
+        </div>
+      </div>
+      <div class="warn-box">⚠️ Diese Policies benötigen Windows 11 Version 24H2 oder neuer als Host.</div>
+      <div class="card">
+        <div class="card-header">🏳️ Verfügbare Policies</div>
+        <div class="card-body">
+          <div class="policy-grid" id="policy-grid"></div>
+          <div class="sep"></div>
+          <div class="info-box" style="margin:0"><span class="icon">💡</span> Für x86-Windows XP/Vista/7 auf Hyper-V Gen2: <strong>LegacyRteWidth</strong>, <strong>LegacyApicSelectionLogic</strong>, <strong>LegacyApicManganeseOverride</strong>, <strong>LegacyGpaLayout</strong> aktivieren.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHARES -->
+    <div class="section" id="section-shares">
+      <div class="section-header">
+        <div class="section-icon">📂</div>
+        <div>
+          <div class="section-title">Shares</div>
+          <div class="section-desc">Plan 9 Shares (ab 1.5 Update 2) & Virtual SMB Shares (ab 1.6 Update 1)</div>
+        </div>
+      </div>
+      <div class="warn-box">⚠️ Bei aktiven Shares kann die VM nicht korrekt suspendiert werden.</div>
+      <div class="card">
+        <div class="card-header">📡 Plan 9 Shares (Hyper-V Socket)</div>
+        <div class="card-body">
+          <div class="array-list" id="p9-list"></div>
+          <button class="btn-add" onclick="addP9Share()">＋ Plan 9 Share hinzufügen</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">🗄️ Virtual SMB Shares</div>
+        <div class="card-body">
+          <div class="array-list" id="smb-list"></div>
+          <button class="btn-add" onclick="addSmbShare()">＋ Virtual SMB Share hinzufügen</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- JSON PREVIEW -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <div class="preview-title">📄 Vorschau</div>
+      <span class="preview-badge">.7b</span>
+      <button class="btn-download" onclick="downloadConfig()">⬇ Download</button>
+    </div>
+    <div class="preview-body"><pre id="json-preview">…</pre></div>
+    <div class="preview-footer">
+      <div class="status-dot"></div>
+      <span id="filename-label">MeineVM.7b</span>
+      <span style="margin-left:auto" id="size-label">0 Bytes</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let scsiDevices = [];
+let netAdapters = [];
+let gpuDevices = [];
+let p9Shares = [];
+let smbShares = [];
+
+const POLICIES = [
+  'LegacyPcrMeasurement','DisableSha384Pcr','LegacyRteWidth',
+  'LegacyTrustedLaunchMemoryMap','LegacyApicSelectionLogic',
+  'LegacyApicManganeseOverride','LegacyGpaLayout','ForceLegacyHcl',
+  'ForceCurrentHcl','UseExtendedMaxVpPerSocketLimit'
+];
+const DRIVES = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+function init() {
+  // Policy grid
+  const pg = document.getElementById('policy-grid');
+  POLICIES.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'policy-item';
+    div.innerHTML = `<input type="checkbox" id="pol-${p}" onchange="updatePreview()"><label for="pol-${p}">${p}</label>`;
+    pg.appendChild(div);
+  });
+
+  // Drives row
+  const dr = document.getElementById('drives-row');
+  DRIVES.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'drive-chip';
+    div.innerHTML = `<input type="checkbox" id="drv-${d}" onchange="updatePreview()"><label for="drv-${d}">${d}:</label>`;
+    dr.appendChild(div);
+  });
+
+  // Default SCSI (VirtualDisk + VirtualImage)
+  addScsiDevice('VirtualDisk');
+  addScsiDevice('VirtualImage');
+
+  // Default net adapter
+  addNetAdapter();
+
+  updatePreview();
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── SCSI DEVICES ──────────────────────────────────────────────────────────
+function addScsiDevice(type = 'VirtualDisk') {
+  const id = Date.now() + Math.random();
+  scsiDevices.push({ id, type, path: '' });
+  renderScsiList();
+  updatePreview();
+}
+
+function removeScsiDevice(id) {
+  scsiDevices = scsiDevices.filter(d => d.id !== id);
+  renderScsiList();
+  updatePreview();
+}
+
+function renderScsiList() {
+  const list = document.getElementById('scsi-list');
+  list.innerHTML = '';
+  scsiDevices.forEach((dev, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">
+        💾 SCSI #${i}
+        <button class="btn-remove" onclick="removeScsiDevice(${dev.id})">✕ Entfernen</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid">
+          <div class="field">
+            <label class="field-label">Typ</label>
+            <select id="scsi-type-${dev.id}" onchange="scsiTypeChanged(${dev.id}); updatePreview()">
+              <option value="VirtualDisk" ${dev.type==='VirtualDisk'?'selected':''}>VirtualDisk (.vhdx, .vhd)</option>
+              <option value="VirtualImage" ${dev.type==='VirtualImage'?'selected':''}>VirtualImage (.iso)</option>
+              <option value="PhysicalDevice" ${dev.type==='PhysicalDevice'?'selected':''}>PhysicalDevice (\\.\PhysicalDriveX)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Pfad</label>
+            <div class="input-row">
+              <input type="text" id="scsi-path-${dev.id}" value="${dev.path}" 
+                placeholder="${placeholderForType(dev.type)}" 
+                oninput="scsiPathChanged(${dev.id}, this.value)">
+              ${dev.type !== 'PhysicalDevice' ? `<button class="btn-browse" title="Datei auswählen" onclick="browsePath(${dev.id})">📁</button>
+              <input type="file" id="scsi-file-${dev.id}" style="display:none"
+                accept="${acceptForType(dev.type)}"
+                onchange="filePickerChosen(${dev.id}, this)">` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+  document.getElementById('badge-storage').textContent = scsiDevices.length;
+}
+
+function placeholderForType(t) {
+  if(t==='VirtualDisk') return 'Windows 11.vhdx';
+  if(t==='VirtualImage') return 'setup.iso (leer = Leeres Laufwerk)';
+  return '\\\\.\\PhysicalDrive0';
+}
+
+function acceptForType(t) {
+  if(t==='VirtualDisk') return '.vhdx,.vhd';
+  if(t==='VirtualImage') return '.iso';
+  return '*';
+}
+
+function browsePath(id) {
+  const dev = scsiDevices.find(x => x.id === id);
+  if(!dev) return;
+
+  // Try modern File System Access API first (gives real path on supported browsers)
+  if(window.showOpenFilePicker) {
+    const types = [];
+    if(dev.type === 'VirtualDisk') {
+      types.push({ description: 'Virtuelle Festplatten', accept: { 'application/octet-stream': ['.vhdx', '.vhd'] } });
+    } else if(dev.type === 'VirtualImage') {
+      types.push({ description: 'ISO-Images', accept: { 'application/octet-stream': ['.iso'] } });
+    }
+    window.showOpenFilePicker({ multiple: false, types: types.length ? types : undefined })
+      .then(([fh]) => {
+        // showOpenFilePicker gives filename only (security sandbox), not full path
+        // We put the name and show a hint
+        const el = document.getElementById('scsi-path-' + id);
+        if(el) {
+          el.value = fh.name;
+          scsiPathChanged(id, fh.name);
+          showToast('info', 'Dateiname übernommen',
+            'Browser-Sicherheit erlaubt keinen vollständigen Pfad. Bitte ergänze den Pfad manuell (z.B. <code>C:\\VMs\\' + fh.name + '</code>).');
+        }
+      })
+      .catch(e => { if(e.name !== 'AbortError') console.warn(e); });
+    return;
+  }
+
+  // Fallback: classic file input
+  const fi = document.getElementById('scsi-file-' + id);
+  if(fi) fi.click();
+}
+
+function filePickerChosen(id, input) {
+  if(!input.files || !input.files[0]) return;
+  const name = input.files[0].name;
+  const el = document.getElementById('scsi-path-' + id);
+  if(el) {
+    el.value = name;
+    scsiPathChanged(id, name);
+    showToast('info', 'Dateiname übernommen',
+      'Browser-Sicherheit erlaubt keinen vollständigen Pfad. Bitte ergänze den Pfad manuell (z.B. <code>C:\\VMs\\' + name + '</code>).');
+  }
+  input.value = '';
+}
+
+function scsiTypeChanged(id) {
+  const d = scsiDevices.find(x => x.id === id);
+  if(d) d.type = document.getElementById('scsi-type-' + id).value;
+  renderScsiList();
+}
+function scsiPathChanged(id, val) {
+  const d = scsiDevices.find(x => x.id === id);
+  if(d) d.path = val;
+  updatePreview();
+}
+
+// ── NETWORK ADAPTERS ──────────────────────────────────────────────────────
+function addNetAdapter() {
+  const id = Date.now() + Math.random();
+  netAdapters.push({ id, connected: true, mac: '', endpoint: '', switchId: '', switchName: '', switchSubnet: '' });
+  renderNetList();
+  updatePreview();
+}
+function removeNetAdapter(id) {
+  netAdapters = netAdapters.filter(a => a.id !== id);
+  renderNetList();
+  updatePreview();
+}
+function renderNetList() {
+  const list = document.getElementById('net-list');
+  list.innerHTML = '';
+  netAdapters.forEach((ad, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">
+        🌐 Adapter #${i}
+        <button class="btn-remove" onclick="removeNetAdapter(${ad.id})">✕ Entfernen</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid">
+          <div class="field">
+            <label class="field-label">MAC-Adresse <span class="opt">(optional)</span></label>
+            <div class="input-row">
+              <input type="text" id="net-mac-${ad.id}" value="${ad.mac}" placeholder="00-15-5D-XX-XX-XX" 
+                oninput="netChanged(${ad.id})">
+              <button class="btn-gen" onclick="genMac(${ad.id})">Rnd</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Endpoint ID <span class="opt">(optional)</span></label>
+            <div class="input-row">
+              <input type="text" id="net-ep-${ad.id}" value="${ad.endpoint}" placeholder="GUID" 
+                oninput="netChanged(${ad.id})">
+              <button class="btn-gen" onclick="genEndpoint(${ad.id})">Rnd</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Switch-GUID <span class="opt">(optional, ab 1.6.1)</span></label>
+            <input type="text" id="net-sw-${ad.id}" value="${ad.switchId}" placeholder="85c8668e-36fe-447f-aae0-ba159a0142a7" 
+              oninput="netChanged(${ad.id})">
+          </div>
+          <div class="field">
+            <label class="field-label">Switch-Name <span class="opt">(optional)</span></label>
+            <input type="text" id="net-swn-${ad.id}" value="${ad.switchName}" placeholder="Custom Switch" 
+              oninput="netChanged(${ad.id})">
+          </div>
+          <div class="field">
+            <label class="field-label">Subnetz <span class="opt">(optional)</span></label>
+            <input type="text" id="net-sub-${ad.id}" value="${ad.switchSubnet}" placeholder="172.22.78.0/24" 
+              oninput="netChanged(${ad.id})">
+          </div>
+          <div class="field" style="justify-content:flex-end;padding-top:16px">
+            <div class="toggle-row" style="border:none;padding:0">
+              <div class="toggle-info"><div class="toggle-label">Connected</div></div>
+              <label class="toggle"><input type="checkbox" id="net-con-${ad.id}" ${ad.connected?'checked':''} onchange="netChanged(${ad.id})"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+  document.getElementById('badge-network').textContent = netAdapters.length;
+}
+function netChanged(id) {
+  const ad = netAdapters.find(a => a.id === id);
+  if(!ad) return;
+  ad.mac = document.getElementById('net-mac-' + id).value;
+  ad.endpoint = document.getElementById('net-ep-' + id).value;
+  ad.switchId = document.getElementById('net-sw-' + id).value;
+  ad.switchName = document.getElementById('net-swn-' + id).value;
+  ad.switchSubnet = document.getElementById('net-sub-' + id).value;
+  ad.connected = document.getElementById('net-con-' + id).checked;
+  updatePreview();
+}
+
+// ── GPU DEVICES ───────────────────────────────────────────────────────────
+function gpuModeChanged() {
+  const mode = document.getElementById('gpu-mode').value;
+  document.getElementById('gpu-devices-card').style.display = mode === 'List' ? '' : 'none';
+}
+function addGpuDevice() {
+  const id = Date.now() + Math.random();
+  gpuDevices.push({ id, iface: '', partitionId: '' });
+  renderGpuDevices();
+  updatePreview();
+}
+function removeGpuDevice(id) {
+  gpuDevices = gpuDevices.filter(d => d.id !== id);
+  renderGpuDevices();
+  updatePreview();
+}
+function renderGpuDevices() {
+  const list = document.getElementById('gpu-device-list');
+  list.innerHTML = '';
+  gpuDevices.forEach((dev, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">GPU #${i}
+        <button class="btn-remove" onclick="removeGpuDevice(${dev.id})">✕</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid-1">
+          <div class="field">
+            <label class="field-label">DeviceInterface</label>
+            <input type="text" id="gpu-if-${dev.id}" value="${dev.iface}" 
+              placeholder="\\\\?\\PCI#VEN_10DE&DEV_1C82...\\GPUPARAV" 
+              oninput="gpuDevChanged(${dev.id})">
+          </div>
+          <div class="field">
+            <label class="field-label">PartitionId <span class="opt">(leer = GPU-PV, sonst GPU-P)</span></label>
+            <input type="number" id="gpu-pid-${dev.id}" value="${dev.partitionId}" 
+              placeholder="65535 für GPU-PV"
+              oninput="gpuDevChanged(${dev.id})">
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function gpuDevChanged(id) {
+  const d = gpuDevices.find(x => x.id === id);
+  if(!d) return;
+  d.iface = document.getElementById('gpu-if-' + id).value;
+  d.partitionId = document.getElementById('gpu-pid-' + id).value;
+  updatePreview();
+}
+
+// ── PLAN 9 SHARES ─────────────────────────────────────────────────────────
+function addP9Share() {
+  const id = Date.now() + Math.random();
+  p9Shares.push({ id, name:'', path:'', port:'', readOnly: false });
+  renderShares();
+  updatePreview();
+}
+function removeP9Share(id) {
+  p9Shares = p9Shares.filter(s => s.id !== id);
+  renderShares();
+  updatePreview();
+}
+// ── SMB SHARES ────────────────────────────────────────────────────────────
+function addSmbShare() {
+  const id = Date.now() + Math.random();
+  smbShares.push({ id, name:'', path:'', readOnly: false });
+  renderShares();
+  updatePreview();
+}
+function removeSmbShare(id) {
+  smbShares = smbShares.filter(s => s.id !== id);
+  renderShares();
+  updatePreview();
+}
+
+function renderShares() {
+  const p9list = document.getElementById('p9-list');
+  p9list.innerHTML = '';
+  p9Shares.forEach((sh, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">📡 Plan 9 Share #${i}
+        <button class="btn-remove" onclick="removeP9Share(${sh.id})">✕</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid">
+          <div class="field"><label class="field-label">Name (Access Name)</label>
+            <input type="text" id="p9-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="p9Changed(${sh.id})"></div>
+          <div class="field"><label class="field-label">Port (Hyper-V Socket)</label>
+            <input type="number" id="p9-port-${sh.id}" value="${sh.port}" placeholder="50001" oninput="p9Changed(${sh.id})"></div>
+          <div class="field" style="grid-column:span 2"><label class="field-label">Host-Pfad</label>
+            <input type="text" id="p9-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="p9Changed(${sh.id})"></div>
+        </div>
+        <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
+          <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
+          <label class="toggle"><input type="checkbox" id="p9-ro-${sh.id}" ${sh.readOnly?'checked':''} onchange="p9Changed(${sh.id})"><span class="toggle-slider"></span></label>
+        </div>
+      </div>`;
+    p9list.appendChild(item);
+  });
+
+  const smblist = document.getElementById('smb-list');
+  smblist.innerHTML = '';
+  smbShares.forEach((sh, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">🗄️ SMB Share #${i}
+        <button class="btn-remove" onclick="removeSmbShare(${sh.id})">✕</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid">
+          <div class="field"><label class="field-label">Name</label>
+            <input type="text" id="smb-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="smbChanged(${sh.id})"></div>
+          <div class="field"><label class="field-label">Host-Pfad</label>
+            <input type="text" id="smb-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="smbChanged(${sh.id})"></div>
+        </div>
+        <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
+          <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
+          <label class="toggle"><input type="checkbox" id="smb-ro-${sh.id}" ${sh.readOnly?'checked':''} onchange="smbChanged(${sh.id})"><span class="toggle-slider"></span></label>
+        </div>
+      </div>`;
+    smblist.appendChild(item);
+  });
+
+  document.getElementById('badge-shares').textContent = p9Shares.length + smbShares.length;
+}
+
+function p9Changed(id) {
+  const sh = p9Shares.find(s => s.id === id);
+  if(!sh) return;
+  sh.name = document.getElementById('p9-name-' + id).value;
+  sh.port = document.getElementById('p9-port-' + id).value;
+  sh.path = document.getElementById('p9-path-' + id).value;
+  sh.readOnly = document.getElementById('p9-ro-' + id).checked;
+  updatePreview();
+}
+function smbChanged(id) {
+  const sh = smbShares.find(s => s.id === id);
+  if(!sh) return;
+  sh.name = document.getElementById('smb-name-' + id).value;
+  sh.path = document.getElementById('smb-path-' + id).value;
+  sh.readOnly = document.getElementById('smb-ro-' + id).checked;
+  updatePreview();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function setMem(v) {
+  document.getElementById('mem-size').value = v;
+  updatePreview();
+}
+function setRes(w, h) {
+  document.getElementById('vid-h').value = w;
+  document.getElementById('vid-v').value = h;
+  updatePreview();
+}
+function genUUID() {
+  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  document.getElementById('ci-uuid').value = uuid;
+  updatePreview();
+}
+function genMac(id) {
+  const hex = () => Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase();
+  const mac = `00-15-5D-${hex()}-${hex()}-${hex()}`;
+  document.getElementById('net-mac-' + id).value = mac;
+  netChanged(id);
+}
+function genEndpoint(id) {
+  const uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random()*16|0;
+    return (c==='x'?r:(r&0x3|0x8)).toString(16);
+  });
+  document.getElementById('net-ep-' + id).value = uuid;
+  netChanged(id);
+}
+function autoFillStateFiles() {
+  const name = document.getElementById('vm-name').value || 'VM';
+  document.getElementById('state-guest').value = name + '.vmgs';
+  document.getElementById('state-runtime').value = name + '.vmrs';
+  document.getElementById('state-save').value = name + '.SaveState.vmrs';
+  updatePreview();
+}
+function updateStatePlaceholders() {
+  const name = document.getElementById('vm-name').value || 'MeineVM';
+  const gf = document.getElementById('state-guest');
+  const rf = document.getElementById('state-runtime');
+  if(gf) gf.placeholder = name + '.vmgs';
+  if(rf) rf.placeholder = name + '.vmrs';
+}
+
+// ── CONFIG BUILDER ────────────────────────────────────────────────────────
+function buildConfig() {
+  const name = document.getElementById('vm-name').value || 'MeineVM';
+  const vm = {
+    Type: 'VirtualMachine',
+    Version: 1,
+    GuestType: document.getElementById('guest-type').value,
+    Name: name,
+    ProcessorCount: parseInt(document.getElementById('cpu-count').value) || 2,
+    MemorySize: parseInt(document.getElementById('mem-size').value) || 4096,
+  };
+
+  // COM Ports
+  const uefi = document.getElementById('com-uefi').value;
+  const cp1 = document.getElementById('com-port1').value;
+  const cp2 = document.getElementById('com-port2').value;
+  const comPorts = { UefiConsole: uefi };
+  if(cp1) comPorts.ComPort1 = cp1;
+  if(cp2) comPorts.ComPort2 = cp2;
+  vm.ComPorts = comPorts;
+
+  // GPU
+  const gpuMode = document.getElementById('gpu-mode').value;
+  const gpuHostDriver = document.getElementById('gpu-hostdriver').checked;
+  const gpu = { AssignmentMode: gpuMode };
+  if(gpuHostDriver) gpu.EnableHostDriverStore = true;
+  if(gpuMode === 'List' && gpuDevices.length > 0) {
+    gpu.SelectedDevices = gpuDevices.map(d => {
+      if(d.partitionId !== '' && d.partitionId !== null) {
+        return { DeviceInterface: d.iface, PartitionId: parseInt(d.partitionId) };
+      }
+      return d.iface;
+    }).filter(d => typeof d === 'string' ? d : d.DeviceInterface);
+  }
+  vm.Gpu = gpu;
+
+  // Network Adapters
+  if(netAdapters.length > 0) {
+    vm.NetworkAdapters = netAdapters.map(ad => {
+      const obj = { Connected: ad.connected };
+      if(ad.mac) obj.MacAddress = ad.mac;
+      if(ad.endpoint) obj.EndpointId = ad.endpoint;
+      if(ad.switchId) obj.SuggestedSwitchId = ad.switchId;
+      if(ad.switchName) obj.SuggestedSwitchName = ad.switchName;
+      if(ad.switchSubnet) obj.SuggestedSwitchSubnet = ad.switchSubnet;
+      return obj;
+    });
+  }
+
+  // SCSI
+  if(scsiDevices.length > 0) {
+    vm.ScsiDevices = scsiDevices.map(d => {
+      const obj = { Type: d.type };
+      if(d.path) obj.Path = d.path;
+      return obj;
+    });
+  }
+
+  // Security
+  const secBoot = document.getElementById('sec-secureboot').checked;
+  const tpm = document.getElementById('sec-tpm').checked;
+  const virtex = document.getElementById('sec-virtex').checked;
+  if(secBoot) vm.SecureBoot = true;
+  if(tpm) vm.Tpm = true;
+
+  // State files — GuestStateFile + RuntimeStateFile always required by NanaBox
+  const name_ = document.getElementById('vm-name').value || 'MeineVM';
+  const gf = document.getElementById('state-guest').value || (name_ + '.vmgs');
+  const rf = document.getElementById('state-runtime').value || (name_ + '.vmrs');
+  const sf = document.getElementById('state-save').value;
+  vm.GuestStateFile = gf;
+  vm.RuntimeStateFile = rf;
+  if(sf) vm.SaveStateFile = sf;
+
+  if(virtex) vm.ExposeVirtualizationExtensions = true;
+
+  // Keyboard
+  const kbRedirect = document.getElementById('kb-redirect').checked;
+  const kbFields = {
+    RedirectKeyCombinations: kbRedirect,
+    FullScreenHotkey: parseInt(document.getElementById('kb-fs').value),
+    CtrlEscHotkey: parseInt(document.getElementById('kb-ce').value),
+    AltEscHotkey: parseInt(document.getElementById('kb-ae').value),
+    AltTabHotkey: parseInt(document.getElementById('kb-at').value),
+    AltShiftTabHotkey: parseInt(document.getElementById('kb-ast').value),
+    AltSpaceHotkey: parseInt(document.getElementById('kb-as').value),
+    CtrlAltDelHotkey: parseInt(document.getElementById('kb-cad').value),
+    FocusReleaseLeftHotkey: parseInt(document.getElementById('kb-frl').value),
+    FocusReleaseRightHotkey: parseInt(document.getElementById('kb-frr').value),
+  };
+  const kbObj = {};
+  if(kbRedirect) kbObj.RedirectKeyCombinations = true;
+  Object.entries(kbFields).forEach(([k,v]) => { if(k!=='RedirectKeyCombinations'&&!isNaN(v)&&v) kbObj[k]=v; });
+  if(Object.keys(kbObj).length > 0) vm.Keyboard = kbObj;
+
+  // Enhanced Session
+  const esBools = {
+    RedirectAudio: 'es-audio', RedirectAudioCapture: 'es-audiocap',
+    RedirectDrives: 'es-drives', RedirectPrinters: 'es-printers',
+    RedirectPorts: 'es-ports', RedirectSmartCards: 'es-smartcard',
+    RedirectClipboard: 'es-clipboard', RedirectDevices: 'es-devices',
+    RedirectPOSDevices: 'es-pos', RedirectDynamicDrives: 'es-dyndrives',
+    RedirectDynamicDevices: 'es-dyndev'
+  };
+  const esObj = {};
+  Object.entries(esBools).forEach(([k,id]) => { if(document.getElementById(id).checked) esObj[k] = true; });
+  const selectedDrives = DRIVES.filter(d => document.getElementById('drv-' + d)?.checked);
+  if(selectedDrives.length > 0) esObj.Drives = selectedDrives;
+  if(Object.keys(esObj).length > 0) vm.EnhancedSession = esObj;
+
+  // Video Monitor
+  const vh = parseInt(document.getElementById('vid-h').value);
+  const vv = parseInt(document.getElementById('vid-v').value);
+  const vnodpi = document.getElementById('vid-nodpi').checked;
+  const vidObj = {};
+  if(!isNaN(vh) && vh) vidObj.HorizontalResolution = vh;
+  if(!isNaN(vv) && vv) vidObj.VerticalResolution = vv;
+  if(vnodpi) vidObj.DisableBasicSessionDpiScaling = true;
+  if(Object.keys(vidObj).length > 0) vm.VideoMonitor = vidObj;
+
+  // Chipset
+  const ciFields = {
+    BaseBoardSerialNumber:'ci-bbsn', ChassisSerialNumber:'ci-cssn',
+    ChassisAssetTag:'ci-cat', Manufacturer:'ci-mfr', ProductName:'ci-prod',
+    Version:'ci-ver', SerialNumber:'ci-sn', Family:'ci-fam',
+    UUID:'ci-uuid', SKUNumber:'ci-sku'
+  };
+  const ciObj = {};
+  Object.entries(ciFields).forEach(([k,id]) => {
+    const v = document.getElementById(id).value;
+    if(v) ciObj[k] = v;
+  });
+  if(Object.keys(ciObj).length > 0) vm.ChipsetInformation = ciObj;
+
+  // Policies
+  const activePolicies = POLICIES.filter(p => document.getElementById('pol-' + p)?.checked);
+  if(activePolicies.length > 0) vm.Policies = activePolicies;
+
+  // Plan9 Shares
+  if(p9Shares.length > 0) {
+    vm.Plan9Shares = p9Shares.map(sh => {
+      const obj = {};
+      if(sh.readOnly) obj.ReadOnly = true;
+      if(sh.port) obj.Port = parseInt(sh.port);
+      if(sh.path) obj.Path = sh.path;
+      if(sh.name) obj.Name = sh.name;
+      return obj;
+    });
+  }
+
+  // VirtualSMB Shares
+  if(smbShares.length > 0) {
+    vm.VirtualSmbShares = smbShares.map(sh => {
+      const obj = {};
+      if(sh.readOnly) obj.ReadOnly = true;
+      if(sh.path) obj.Path = sh.path;
+      if(sh.name) obj.Name = sh.name;
+      return obj;
+    });
+  }
+
+  return { NanaBox: vm };
+}
+
+// ── JSON SYNTAX HIGHLIGHTING ──────────────────────────────────────────────
+function highlight(json) {
+  return json
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      let cls = 'jn';
+      if(/^"/.test(m)) { cls = /:$/.test(m) ? 'jk' : 'js'; }
+      else if(/true|false/.test(m)) cls = 'jb';
+      else if(/null/.test(m)) cls = 'jp';
+      return `<span class="${cls}">${m}</span>`;
+    })
+    .replace(/[{}\[\],]/g, m => `<span class="jp">${m}</span>`);
+}
+
+// ── UPDATE PREVIEW ────────────────────────────────────────────────────────
+function updatePreview() {
+  const cfg = buildConfig();
+  const json = JSON.stringify(cfg, null, 2);
+  document.getElementById('json-preview').innerHTML = highlight(json);
+  const name = cfg.NanaBox.Name || 'MeineVM';
+  document.getElementById('filename-label').textContent = name + '.7b';
+  document.getElementById('size-label').textContent = new Blob(['\uFEFF'+json]).size + ' Bytes (UTF-8 BOM)';
+}
+
+// ── DOWNLOAD ──────────────────────────────────────────────────────────────
+function downloadConfig() {
+  const cfg = buildConfig();
+  const json = JSON.stringify(cfg, null, 2);
+  // UTF-8 with BOM as required by NanaBox
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + json], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (cfg.NanaBox.Name || 'MeineVM') + '.7b';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+// ── TOAST SYSTEM ─────────────────────────────────────────────────────────
+function showToast(type, title, msg, duration) {
+  duration = duration || 4500;
+  var icons = { success: '✅', error: '❌', warn: '⚠️', info: 'ℹ️' };
+  var container = document.getElementById('toast-container');
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML =
+    '<div class="toast-icon">' + (icons[type]||'ℹ️') + '</div>' +
+    '<div class="toast-body"><div class="toast-title">' + title + '</div><div class="toast-msg">' + msg + '</div></div>' +
+    '<button class="toast-close" onclick="this.closest(\'.toast\').remove()">✕</button>';
+  container.appendChild(t);
+  setTimeout(function() {
+    t.style.animation = 'toastOut .3s ease forwards';
+    setTimeout(function() { t.remove(); }, 300);
+  }, duration);
+}
+
+// ── DRAG & DROP ──────────────────────────────────────────────────────────
+var dragCounter = 0;
+document.addEventListener('dragenter', function(e) {
+  e.preventDefault(); dragCounter++;
+  document.getElementById('drop-overlay').classList.add('active');
+});
+document.addEventListener('dragleave', function(e) {
+  dragCounter--;
+  if(dragCounter <= 0) { dragCounter = 0; document.getElementById('drop-overlay').classList.remove('active'); }
+});
+document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('drop', function(e) {
+  e.preventDefault(); dragCounter = 0;
+  document.getElementById('drop-overlay').classList.remove('active');
+  var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file) processImportFile(file);
+});
+
+// ── FILE INPUT ────────────────────────────────────────────────────────────
+function handleFileInput(input) {
+  if(input.files && input.files[0]) processImportFile(input.files[0]);
+  input.value = '';
+}
+
+// ── IMPORT PIPELINE ───────────────────────────────────────────────────────
+var pendingImport = null;
+
+function processImportFile(file) {
+  var validExt = file.name.endsWith('.7b') || file.name.endsWith('.json');
+  if(!validExt) {
+    showToast('error', 'Ungültiges Format', '"' + file.name + '" ist keine .7b oder .json Datei.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    try {
+      var cfg = JSON.parse(text);
+      if(!cfg.NanaBox) {
+        showToast('error', 'Kein NanaBox-Format', 'Die Datei enthält kein "NanaBox" Root-Objekt.');
+        return;
+      }
+      pendingImport = cfg;
+      showImportModal(cfg, file.name);
+    } catch(err) {
+      showImportError(err.message);
+    }
+  };
+  reader.onerror = function() { showToast('error', 'Lesefehler', 'Die Datei konnte nicht gelesen werden.'); };
+  reader.readAsText(file, 'utf-8');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showImportError(msg) {
+  var body = document.getElementById('modal-body-content');
+  body.innerHTML = '<div class="parse-error">⚠️ JSON-Fehler:<br><br>' + escHtml(msg) + '</div>';
+  document.getElementById('import-modal').classList.add('active');
+  document.querySelector('.btn-modal-confirm').style.display = 'none';
+}
+
+function showImportModal(cfg, filename) {
+  var vm = cfg.NanaBox;
+  document.querySelector('.btn-modal-confirm').style.display = '';
+  var rows = [];
+  function row(key, val, badge) {
+    var b = badge ? '<span class="summary-badge ' + badge.cls + '">' + badge.text + '</span>' : '';
+    return '<div class="summary-row"><div class="summary-key">' + escHtml(key) + '</div><div class="summary-val">' + escHtml(String(val)) + b + '</div></div>';
+  }
+  rows.push('<div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;font-family:\'JetBrains Mono\',monospace">📄 ' + escHtml(filename) + '</div>');
+  rows.push(row('Name', vm.Name || '–'));
+  rows.push(row('GuestType', vm.GuestType || '–'));
+  rows.push(row('ProcessorCount', vm.ProcessorCount != null ? vm.ProcessorCount : '–'));
+  rows.push(row('MemorySize', vm.MemorySize ? vm.MemorySize + ' MB (' + (vm.MemorySize/1024).toFixed(1) + ' GB)' : '–'));
+  if(vm.ScsiDevices && vm.ScsiDevices.length) {
+    vm.ScsiDevices.forEach(function(d,i) { rows.push(row('ScsiDevices['+i+']', d.Type + (d.Path ? ': '+d.Path : ' (kein Pfad)'), {cls:'badge-ok',text:d.Type})); });
+  }
+  if(vm.NetworkAdapters && vm.NetworkAdapters.length) {
+    vm.NetworkAdapters.forEach(function(a,i) { rows.push(row('NetworkAdapters['+i+']', (a.Connected?'Connected':'Disconnected') + ' · MAC: ' + (a.MacAddress||'auto'))); });
+  }
+  if(vm.Gpu) rows.push(row('GPU AssignmentMode', vm.Gpu.AssignmentMode || '–'));
+  rows.push(row('SecureBoot', vm.SecureBoot ? 'Ja' : 'Nein', vm.SecureBoot ? {cls:'badge-ok',text:'AN'} : null));
+  rows.push(row('TPM', vm.Tpm ? 'Ja' : 'Nein', vm.Tpm ? {cls:'badge-ok',text:'AN'} : null));
+  if(vm.ExposeVirtualizationExtensions) rows.push(row('Nested Virt.', 'Aktiviert', {cls:'badge-ok',text:'AN'}));
+  if(vm.GuestStateFile) rows.push(row('GuestStateFile', vm.GuestStateFile));
+  if(vm.RuntimeStateFile) rows.push(row('RuntimeStateFile', vm.RuntimeStateFile));
+  if(vm.Keyboard) rows.push(row('Keyboard', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
+  if(vm.EnhancedSession) rows.push(row('Enhanced Session', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
+  if(vm.VideoMonitor) rows.push(row('VideoMonitor', (vm.VideoMonitor.HorizontalResolution||'?') + '×' + (vm.VideoMonitor.VerticalResolution||'?')));
+  if(vm.ChipsetInformation) { var ci = vm.ChipsetInformation; rows.push(row('Chipsatz', ((ci.Manufacturer||'')+' '+(ci.ProductName||'')).trim() || 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'})); }
+  if(vm.Policies && vm.Policies.length) rows.push(row('Policies', vm.Policies.join(', '), {cls:'badge-warn',text:vm.Policies.length+' aktiv'}));
+  if(vm.Plan9Shares && vm.Plan9Shares.length) rows.push(row('Plan9Shares', vm.Plan9Shares.length + ' Share(s)', {cls:'badge-ok',text:vm.Plan9Shares.length+'×'}));
+  if(vm.VirtualSmbShares && vm.VirtualSmbShares.length) rows.push(row('VirtualSmbShares', vm.VirtualSmbShares.length + ' Share(s)', {cls:'badge-ok',text:vm.VirtualSmbShares.length+'×'}));
+  document.getElementById('modal-body-content').innerHTML = rows.join('');
+  document.getElementById('import-modal').classList.add('active');
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('active');
+  pendingImport = null;
+}
+
+function confirmImport() {
+  if(!pendingImport) return;
+  var name = pendingImport.NanaBox && pendingImport.NanaBox.Name ? pendingImport.NanaBox.Name : 'VM';
+  applyConfig(pendingImport);
+  closeImportModal();
+  showToast('success', 'Import erfolgreich', '"' + name + '" wurde vollständig geladen.');
+  pendingImport = null;
+}
+
+function applyConfig(cfg) {
+  var vm = cfg.NanaBox;
+  if(!vm) return;
+  setVal('vm-name', vm.Name || '');
+  setVal('guest-type', vm.GuestType || 'Windows');
+  setVal('cpu-count', vm.ProcessorCount != null ? vm.ProcessorCount : 2);
+  setVal('mem-size', vm.MemorySize != null ? vm.MemorySize : 4096);
+  var com = vm.ComPorts || {};
+  setVal('com-uefi', com.UefiConsole || 'Disabled');
+  setVal('com-port1', com.ComPort1 || '');
+  setVal('com-port2', com.ComPort2 || '');
+  var gpu = vm.Gpu || {};
+  setVal('gpu-mode', gpu.AssignmentMode || 'Mirror');
+  setCheck('gpu-hostdriver', !!gpu.EnableHostDriverStore);
+  gpuDevices = [];
+  if(gpu.AssignmentMode === 'List' && Array.isArray(gpu.SelectedDevices)) {
+    gpu.SelectedDevices.forEach(function(d) {
+      var id = Date.now() + Math.random();
+      if(typeof d === 'string') { gpuDevices.push({id:id, iface:d, partitionId:''}); }
+      else { gpuDevices.push({id:id, iface:d.DeviceInterface||'', partitionId:d.PartitionId!=null?d.PartitionId:''}); }
+    });
+  }
+  gpuModeChanged(); renderGpuDevices();
+  netAdapters = [];
+  if(Array.isArray(vm.NetworkAdapters)) {
+    vm.NetworkAdapters.forEach(function(a) {
+      netAdapters.push({id:Date.now()+Math.random(), connected:a.Connected!==false, mac:a.MacAddress||'', endpoint:a.EndpointId||'', switchId:a.SuggestedSwitchId||'', switchName:a.SuggestedSwitchName||'', switchSubnet:a.SuggestedSwitchSubnet||''});
+    });
+  }
+  renderNetList();
+  scsiDevices = [];
+  if(Array.isArray(vm.ScsiDevices)) {
+    vm.ScsiDevices.forEach(function(d) { scsiDevices.push({id:Date.now()+Math.random(), type:d.Type||'VirtualDisk', path:d.Path||''}); });
+  }
+  renderScsiList();
+  setCheck('sec-secureboot', !!vm.SecureBoot);
+  setCheck('sec-tpm', !!vm.Tpm);
+  setCheck('sec-virtex', !!vm.ExposeVirtualizationExtensions);
+  setVal('state-guest', vm.GuestStateFile || '');
+  setVal('state-runtime', vm.RuntimeStateFile || '');
+  setVal('state-save', vm.SaveStateFile || '');
+  var kb = vm.Keyboard || {};
+  setCheck('kb-redirect', !!kb.RedirectKeyCombinations);
+  setVal('kb-fs',  kb.FullScreenHotkey  != null ? kb.FullScreenHotkey  : '');
+  setVal('kb-ce',  kb.CtrlEscHotkey     != null ? kb.CtrlEscHotkey     : '');
+  setVal('kb-ae',  kb.AltEscHotkey      != null ? kb.AltEscHotkey      : '');
+  setVal('kb-at',  kb.AltTabHotkey      != null ? kb.AltTabHotkey      : '');
+  setVal('kb-ast', kb.AltShiftTabHotkey != null ? kb.AltShiftTabHotkey : '');
+  setVal('kb-as',  kb.AltSpaceHotkey    != null ? kb.AltSpaceHotkey    : '');
+  setVal('kb-cad', kb.CtrlAltDelHotkey  != null ? kb.CtrlAltDelHotkey  : '');
+  setVal('kb-frl', kb.FocusReleaseLeftHotkey  != null ? kb.FocusReleaseLeftHotkey  : '');
+  setVal('kb-frr', kb.FocusReleaseRightHotkey != null ? kb.FocusReleaseRightHotkey : '');
+  var es = vm.EnhancedSession || {};
+  setCheck('es-audio',    !!es.RedirectAudio);
+  setCheck('es-audiocap', !!es.RedirectAudioCapture);
+  setCheck('es-clipboard',!!es.RedirectClipboard);
+  setCheck('es-drives',   !!es.RedirectDrives);
+  setCheck('es-printers', !!es.RedirectPrinters);
+  setCheck('es-ports',    !!es.RedirectPorts);
+  setCheck('es-smartcard',!!es.RedirectSmartCards);
+  setCheck('es-devices',  !!es.RedirectDevices);
+  setCheck('es-pos',      !!es.RedirectPOSDevices);
+  setCheck('es-dyndrives',!!es.RedirectDynamicDrives);
+  setCheck('es-dyndev',   !!es.RedirectDynamicDevices);
+  DRIVES.forEach(function(d) {
+    var el = document.getElementById('drv-' + d);
+    if(el) el.checked = Array.isArray(es.Drives) && es.Drives.indexOf(d) !== -1;
+  });
+  var vid = vm.VideoMonitor || {};
+  setVal('vid-h', vid.HorizontalResolution != null ? vid.HorizontalResolution : '');
+  setVal('vid-v', vid.VerticalResolution   != null ? vid.VerticalResolution   : '');
+  setCheck('vid-nodpi', !!vid.DisableBasicSessionDpiScaling);
+  var ci = vm.ChipsetInformation || {};
+  setVal('ci-mfr',  ci.Manufacturer || '');
+  setVal('ci-prod', ci.ProductName || '');
+  setVal('ci-ver',  ci.Version || '');
+  setVal('ci-fam',  ci.Family || '');
+  setVal('ci-sku',  ci.SKUNumber || '');
+  setVal('ci-sn',   ci.SerialNumber || '');
+  setVal('ci-bbsn', ci.BaseBoardSerialNumber || '');
+  setVal('ci-cssn', ci.ChassisSerialNumber || '');
+  setVal('ci-cat',  ci.ChassisAssetTag || '');
+  setVal('ci-uuid', ci.UUID || '');
+  POLICIES.forEach(function(p) {
+    var el = document.getElementById('pol-' + p);
+    if(el) el.checked = Array.isArray(vm.Policies) && vm.Policies.indexOf(p) !== -1;
+  });
+  p9Shares = [];
+  if(Array.isArray(vm.Plan9Shares)) {
+    vm.Plan9Shares.forEach(function(sh) { p9Shares.push({id:Date.now()+Math.random(), name:sh.Name||'', path:sh.Path||'', port:sh.Port||'', readOnly:!!sh.ReadOnly}); });
+  }
+  smbShares = [];
+  if(Array.isArray(vm.VirtualSmbShares)) {
+    vm.VirtualSmbShares.forEach(function(sh) { smbShares.push({id:Date.now()+Math.random(), name:sh.Name||'', path:sh.Path||'', readOnly:!!sh.ReadOnly}); });
+  }
+  renderShares();
+  updatePreview();
+}
+
+function setVal(id, val) { var el = document.getElementById(id); if(el) el.value = val; }
+function setCheck(id, val) { var el = document.getElementById(id); if(el) el.checked = !!val; }
+
+// ── START ─────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
