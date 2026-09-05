@@ -1292,6 +1292,13 @@ function parseGpuScan() {
   }
   detectedGpus = found;
   storeDetectedGpus();
+  // The dropdown only exists inside a GPU entry, so without one the devices
+  // just read would stay invisible. Seed the first entry in that case.
+  if(gpuDevices.length === 0) {
+    addGpuDevice();
+    status.textContent = t('gpu.scan.seeded').replace('{0}', found.length);
+    return;
+  }
   status.textContent = t('gpu.scan.found').replace('{0}', found.length);
   renderGpuDevices();
   updatePreview();
@@ -1339,7 +1346,8 @@ const I18N = {
     'gpu.scan.unknown': 'Unknown vendor',
     'gpu.scan.local': 'This browser renders with:',
     'gpu.scan.none': 'No device interface path found in the pasted text.',
-    'gpu.scan.found': '{0} device(s) read. They are now offered in every GPU entry.',
+    'gpu.scan.found': '{0} device(s) read. They are offered in the dropdown of every GPU entry.',
+    'gpu.scan.seeded': '{0} device(s) read. The first one was added below.',
     'es.device': 'Device', 'es.devpath': 'Device instance path',
     'sh.p9.item': 'Plan 9 share', 'sh.smb.item': 'SMB share',
     'sh.name.access': 'Name (access name)', 'sh.port': 'Port (Hyper-V Socket)',
@@ -1438,7 +1446,8 @@ const I18N = {
     'gpu.scan.unknown': 'Unbekannter Hersteller',
     'gpu.scan.local': 'Dieser Browser rendert mit:',
     'gpu.scan.none': 'Im eingefügten Text wurde kein Device Interface Path gefunden.',
-    'gpu.scan.found': '{0} Gerät(e) eingelesen. Sie stehen jetzt in jedem GPU-Eintrag zur Auswahl.',
+    'gpu.scan.found': '{0} Gerät(e) eingelesen. Sie stehen im Auswahlfeld jedes GPU-Eintrags bereit.',
+    'gpu.scan.seeded': '{0} Gerät(e) eingelesen. Das erste wurde unten eingetragen.',
     'gpu.detected': 'Erkannte GPU',
     'gpu.detected.manual': '— manuell eingeben —',
     'gpu.detected.hint': 'Bei Auswahl wird der Interface-Pfad unten automatisch gefüllt.',
