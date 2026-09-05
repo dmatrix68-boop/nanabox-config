@@ -556,6 +556,29 @@
   .lang-btn + .lang-btn { border-left: 1px solid var(--border2); }
   .lang-btn:hover { color: var(--text); background: var(--surface2); }
   .lang-btn.active { background: var(--accent-dim); color: var(--accent); }
+
+  /* GPU host scan panel */
+  .scan-box {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px;
+  }
+  .scan-head {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 700; color: var(--text);
+  }
+  .scan-head .btn-gen { margin-left: auto; flex-shrink: 0; }
+  .scan-body > * + * { margin-top: 8px; }
+  .scan-body { margin-top: 12px; }
+  .code-row { display: flex; align-items: stretch; gap: 8px; }
+  .code-row code {
+    flex: 1; min-width: 0; overflow-x: auto; white-space: pre;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--accent);
+  }
+  .code-row .btn-gen { flex-shrink: 0; }
+  .scan-box textarea { resize: vertical; min-height: 70px; }
 </style>
 </head>
 <body>
@@ -790,7 +813,28 @@
       <div class="card" id="gpu-devices-card" style="display:none">
         <div class="card-header" data-i18n="gpu.sel.card">🖥️ Selected devices (mode "List" only)</div>
         <div class="card-body">
-          <div class="warn-box" data-i18n="gpu.sel.warn">⚠️ Look up device interfaces in Device Manager or via PowerShell (Get-PnpDevice).</div>
+          <div class="scan-box">
+            <div class="scan-head">
+              <span data-i18n="gpu.scan.title">🔍 Read GPUs from the host</span>
+              <button class="btn-gen" id="gpu-scan-toggle" onclick="toggleGpuScan()"
+                data-i18n="gpu.scan.show">Show</button>
+            </div>
+            <div class="scan-body" id="gpu-scan-body" style="display:none">
+              <div class="info-box" style="margin:0"><span class="icon">ℹ️</span><span data-i18n="gpu.scan.info">A web page cannot read the host's PCI devices &mdash; browsers have no access to them. Run the command below on the host and paste its output; the devices then appear in the dropdown of every GPU entry.</span></div>
+              <div class="field-label" data-i18n="gpu.scan.step1">1. Run in PowerShell as administrator:</div>
+              <div class="code-row">
+                <code id="gpu-scan-command"></code>
+                <button class="btn-gen" id="gpu-scan-copy" onclick="copyGpuScanCommand()"
+                  data-i18n="gpu.scan.copy">Copy</button>
+              </div>
+              <div class="field-label" data-i18n="gpu.scan.step2">2. Paste the output here:</div>
+              <textarea id="gpu-scan-input" rows="4" spellcheck="false"
+                placeholder="\\?\PCI#VEN_10DE&amp;DEV_1C82&amp;...\GPUPARAV"></textarea>
+              <button class="btn-add" onclick="parseGpuScan()" data-i18n="gpu.scan.parse">Read devices</button>
+              <div class="field-hint" id="gpu-scan-status"></div>
+              <div class="field-hint" id="gpu-scan-local"></div>
+            </div>
+          </div>
           <div class="array-list" id="gpu-device-list"></div>
           <button class="btn-add" onclick="addGpuDevice()" data-i18n="gpu.sel.add">＋ Add GPU device</button>
         </div>
@@ -1148,6 +1192,129 @@ let p9Shares = [];
 let smbShares = [];
 let esDevices = [];
 
+// ── GPU HOST SCAN ─────────────────────────────────────────────────────────
+// A browser cannot enumerate the host's PCI devices, so the device interface
+// paths are taken from the output of a PowerShell command the user runs on
+// the host. Msvm_PartitionableGpu is the class the NanaBox configuration
+// reference points at for GPU assignment in "List" mode.
+const GPU_SCAN_COMMAND =
+  'Get-CimInstance -Namespace root\\virtualization\\v2 ' +
+  '-ClassName Msvm_PartitionableGpu | Select-Object -ExpandProperty Name';
+
+const GPU_VENDORS = {
+  '10DE': 'NVIDIA', '1002': 'AMD', '1022': 'AMD',
+  '8086': 'Intel', '1414': 'Microsoft', '15AD': 'VMware'
+};
+
+let detectedGpus = [];
+
+function loadDetectedGpus() {
+  try {
+    const raw = localStorage.getItem('nanabox-gpus');
+    const list = raw ? JSON.parse(raw) : [];
+    if(Array.isArray(list)) {
+      detectedGpus = list.filter(p => typeof p === 'string' && p);
+    }
+  } catch(e) { detectedGpus = []; }
+}
+
+function storeDetectedGpus() {
+  try { localStorage.setItem('nanabox-gpus', JSON.stringify(detectedGpus)); }
+  catch(e) {}
+}
+
+// Builds a readable label from the vendor and device IDs inside the path.
+function gpuLabelFor(path) {
+  const ven = /VEN_([0-9A-Fa-f]{4})/.exec(path);
+  const dev = /DEV_([0-9A-Fa-f]{4})/.exec(path);
+  const vendor = ven
+    ? (GPU_VENDORS[ven[1].toUpperCase()] || 'VEN_' + ven[1].toUpperCase())
+    : t('gpu.scan.unknown');
+  return vendor + (dev ? ' · DEV_' + dev[1].toUpperCase() : '');
+}
+
+function toggleGpuScan() {
+  const body = document.getElementById('gpu-scan-body');
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  document.getElementById('gpu-scan-toggle').textContent =
+    open ? t('gpu.scan.hide') : t('gpu.scan.show');
+  if(open) showLocalRenderer();
+}
+
+function copyGpuScanCommand() {
+  const done = () => {
+    const b = document.getElementById('gpu-scan-copy');
+    b.textContent = t('gpu.scan.copied');
+    setTimeout(() => { b.textContent = t('gpu.scan.copy'); }, 1500);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(GPU_SCAN_COMMAND).then(done, () => {});
+  }
+}
+
+// The browser only knows the adapter it renders with. That is a hint for
+// picking the right entry, never a device interface path.
+function showLocalRenderer() {
+  const el = document.getElementById('gpu-scan-local');
+  let name = '';
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+    if(info) name = String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) || '');
+  } catch(e) { name = ''; }
+  el.textContent = name ? t('gpu.scan.local') + ' ' + name : '';
+}
+
+// Accepts raw command output as well as ConvertTo-Json output.
+function parseGpuScan() {
+  const raw = document.getElementById('gpu-scan-input').value;
+  let found = [];
+  try {
+    const data = JSON.parse(raw);
+    (Array.isArray(data) ? data : [data]).forEach(entry => {
+      if(typeof entry === 'string') found.push(entry);
+      else if(entry && typeof entry.Name === 'string') found.push(entry.Name);
+    });
+  } catch(e) { /* not JSON, fall through to the plain text form */ }
+  if(found.length === 0) {
+    found = raw.match(/\\\\\?\\[^\s"',]+/g) || [];
+  }
+  found = found
+    .map(p => p.trim())
+    .filter(p => p && /GPUPARAV/i.test(p))
+    .filter((p, i, all) => all.indexOf(p) === i);
+
+  const status = document.getElementById('gpu-scan-status');
+  if(found.length === 0) {
+    status.textContent = t('gpu.scan.none');
+    return;
+  }
+  detectedGpus = found;
+  storeDetectedGpus();
+  status.textContent = t('gpu.scan.found').replace('{0}', found.length);
+  renderGpuDevices();
+  updatePreview();
+}
+
+function applyDetectedGpu(id, value) {
+  if(!value) return;
+  const d = gpuDevices.find(x => x.id === id);
+  if(!d) return;
+  d.iface = value;
+  renderGpuDevices();
+  updatePreview();
+}
+
+// Returns the first detected device that no entry uses yet.
+function nextUnusedGpu() {
+  const used = gpuDevices.map(d => d.iface);
+  for(let i = 0; i < detectedGpus.length; i++) {
+    if(used.indexOf(detectedGpus[i]) === -1) return detectedGpus[i];
+  }
+  return '';
+}
+
 // ── I18N ──────────────────────────────────────────────────────────────────
 // English is the lead language: the markup carries the English text, and the
 // defaults below are harvested from it at startup. Only strings built in
@@ -1163,6 +1330,16 @@ const I18N = {
     'net.switchid': 'Switch GUID', 'net.switchname': 'Switch name', 'net.subnet': 'Subnet',
     'gpu.pid.opt': '(blank = GPU-PV, otherwise GPU-P)',
     'gpu.pid.ph': '65535 for GPU-PV',
+    'gpu.detected': 'Detected GPU',
+    'gpu.detected.manual': '— enter manually —',
+    'gpu.detected.hint': 'Selecting a device fills in the interface path below.',
+    'gpu.detected.empty': 'No devices read yet — use "Read GPUs from the host" above.',
+    'gpu.scan.hide': 'Hide',
+    'gpu.scan.copied': 'Copied',
+    'gpu.scan.unknown': 'Unknown vendor',
+    'gpu.scan.local': 'This browser renders with:',
+    'gpu.scan.none': 'No device interface path found in the pasted text.',
+    'gpu.scan.found': '{0} device(s) read. They are now offered in every GPU entry.',
     'es.device': 'Device', 'es.devpath': 'Device instance path',
     'sh.p9.item': 'Plan 9 share', 'sh.smb.item': 'SMB share',
     'sh.name.access': 'Name (access name)', 'sh.port': 'Port (Hyper-V Socket)',
@@ -1246,10 +1423,26 @@ const I18N = {
     'gpu.hds.info': 'Legt folgende Readonly-Shares an – deren Access Names dürfen nicht für eigene Shares verwendet werden:<br>\n            • <strong>NanaBox.HostDrivers</strong> → %SystemRoot%\\System32\\DriverStore\\FileRepository (ab 1.5 Update 3, Virtual SMB ab 1.6 Update 1)<br>\n            • <strong>NanaBox.HostLxssLib</strong> → %SystemRoot%\\System32\\lxss\\lib (ab 1.5 Update 3, für CUDA in Linux-Gästen)<br>\n            • <strong>HostDriverStore</strong> → veraltet, nur noch aus Kompatibilitätsgründen vorhanden',
     'gpu.hds.warn': '⚠️ Bei aktivem EnableHostDriverStore kann die VM nicht korrekt suspendiert werden.',
     'gpu.sel.card': '🖥️ Ausgewählte Geräte (nur im Modus „List“)',
-    'gpu.sel.warn': '⚠️ Geräte-Interfaces im Geräte-Manager oder per PowerShell (Get-PnpDevice) ermitteln.',
     'gpu.sel.add': '＋ GPU-Gerät hinzufügen',
     'gpu.pid.opt': '(leer = GPU-PV, sonst GPU-P)',
     'gpu.pid.ph': '65535 für GPU-PV',
+    'gpu.scan.title': '🔍 GPUs vom Host einlesen',
+    'gpu.scan.show': 'Anzeigen',
+    'gpu.scan.hide': 'Ausblenden',
+    'gpu.scan.info': 'Eine Webseite kann die PCI-Geräte des Hosts nicht auslesen – Browser haben darauf keinen Zugriff. Führe den folgenden Befehl auf dem Host aus und füge die Ausgabe ein; die Geräte stehen danach im Auswahlfeld jedes GPU-Eintrags.',
+    'gpu.scan.step1': '1. In PowerShell als Administrator ausführen:',
+    'gpu.scan.step2': '2. Ausgabe hier einfügen:',
+    'gpu.scan.copy': 'Kopieren',
+    'gpu.scan.copied': 'Kopiert',
+    'gpu.scan.parse': 'Geräte einlesen',
+    'gpu.scan.unknown': 'Unbekannter Hersteller',
+    'gpu.scan.local': 'Dieser Browser rendert mit:',
+    'gpu.scan.none': 'Im eingefügten Text wurde kein Device Interface Path gefunden.',
+    'gpu.scan.found': '{0} Gerät(e) eingelesen. Sie stehen jetzt in jedem GPU-Eintrag zur Auswahl.',
+    'gpu.detected': 'Erkannte GPU',
+    'gpu.detected.manual': '— manuell eingeben —',
+    'gpu.detected.hint': 'Bei Auswahl wird der Interface-Pfad unten automatisch gefüllt.',
+    'gpu.detected.empty': 'Noch keine Geräte eingelesen – oben „GPUs vom Host einlesen“ verwenden.',
     // security
     'sec.title': 'Sicherheitsfeatures',
     'sec.desc': 'Secure Boot, TPM und Virtualisierungserweiterungen',
@@ -1400,6 +1593,13 @@ function setLang(l) {
   // Everything rendered from JavaScript has to be rebuilt in the new language.
   renderScsiList(); renderNetList(); renderGpuDevices(); renderEsDevices();
   renderShares(); renderPolicyGrid(); renderDrivesRow();
+  const CommandElement = document.getElementById('gpu-scan-command');
+  if(CommandElement) CommandElement.textContent = GPU_SCAN_COMMAND;
+  const ToggleElement = document.getElementById('gpu-scan-toggle');
+  if(ToggleElement) {
+    const Open = document.getElementById('gpu-scan-body').style.display !== 'none';
+    ToggleElement.textContent = Open ? t('gpu.scan.hide') : t('gpu.scan.show');
+  }
   updatePreview();
 }
 
@@ -1428,6 +1628,7 @@ const DRIVES = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
 // ── INIT ───────────────────────────────────────────────────────────────────
 function init() {
   captureEnglishDefaults();
+  loadDetectedGpus();
   renderPolicyGrid();
   renderDrivesRow();
 
@@ -1690,7 +1891,7 @@ function gpuModeChanged() {
 }
 function addGpuDevice() {
   const id = Date.now() + Math.random();
-  gpuDevices.push({ id, iface: '', partitionId: '' });
+  gpuDevices.push({ id, iface: nextUnusedGpu(), partitionId: '' });
   renderGpuDevices();
   updatePreview();
 }
@@ -1711,6 +1912,18 @@ function renderGpuDevices() {
       </div>
       <div class="array-item-body">
         <div class="field-grid-1">
+          <div class="field">
+            <label class="field-label">${t('gpu.detected')}</label>
+            <select id="gpu-sel-${dev.id}"
+              onchange="applyDetectedGpu(${dev.id}, this.value)">
+              <option value="">${escHtml(t('gpu.detected.manual'))}</option>
+              ${detectedGpus.map(p => `<option value="${escHtml(p)}"${
+                p === dev.iface ? ' selected' : ''}>${escHtml(gpuLabelFor(p))}</option>`).join('')}
+            </select>
+            <div class="field-hint">${escHtml(detectedGpus.length
+              ? t('gpu.detected.hint')
+              : t('gpu.detected.empty'))}</div>
+          </div>
           <div class="field">
             <label class="field-label">DeviceInterface</label>
             <input type="text" id="gpu-if-${dev.id}" value="${escHtml(dev.iface)}" 
