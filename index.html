@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -540,6 +540,22 @@
     font-family: 'JetBrains Mono', monospace; font-size: 12px;
   }
   .drive-chip input[type=checkbox] { accent-color: var(--accent2); }
+
+  /* language switch */
+  .lang-switch {
+    display: inline-flex; align-items: stretch;
+    border: 1px solid var(--border2); border-radius: 6px;
+    overflow: hidden; margin-right: 10px;
+  }
+  .lang-btn {
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--text-dim); font-family: inherit;
+    font-size: 11px; font-weight: 700; letter-spacing: .5px;
+    padding: 6px 10px; transition: background .15s, color .15s;
+  }
+  .lang-btn + .lang-btn { border-left: 1px solid var(--border2); }
+  .lang-btn:hover { color: var(--text); background: var(--surface2); }
+  .lang-btn.active { background: var(--accent-dim); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -553,8 +569,12 @@
   </div>
   <span class="header-sub">// .7b Generator</span>
   <span class="spacer"></span>
-  <button class="btn-import" onclick="document.getElementById('import-file-input').click()">⬆ Importieren</button>
-  <a class="header-link" href="https://github.com/M2Team/NanaBox/blob/main/Documents/ConfigurationReference.md" target="_blank">📄 Reference</a>
+  <div class="lang-switch" role="group" aria-label="Language">
+    <button type="button" id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button type="button" id="lang-de" class="lang-btn" onclick="setLang('de')">DE</button>
+  </div>
+  <button class="btn-import" onclick="document.getElementById('import-file-input').click()" data-i18n="header.import">⬆ Import</button>
+  <a class="header-link" href="https://github.com/M2Team/NanaBox/blob/main/Documents/ConfigurationReference.md" target="_blank" data-i18n="header.reference">📄 Reference</a>
   <input type="file" id="import-file-input" accept=".7b,.json" style="display:none" onchange="handleFileInput(this)">
 </header>
 
@@ -562,8 +582,8 @@
 <div id="drop-overlay">
   <div class="drop-box">
     <div class="drop-icon">📂</div>
-    <div class="drop-title">Datei loslassen</div>
-    <div class="drop-sub">.7b Konfigurationsdatei importieren</div>
+    <div class="drop-title" data-i18n="drop.title">Drop the file</div>
+    <div class="drop-sub" data-i18n="drop.sub">Import a .7b configuration file</div>
   </div>
 </div>
 
@@ -572,13 +592,13 @@
   <div class="modal-box">
     <div class="modal-header">
       <span style="font-size:18px">📥</span>
-      <div class="modal-title">Import-Vorschau</div>
+      <div class="modal-title" data-i18n="modal.title">Import preview</div>
       <button class="modal-close" onclick="closeImportModal()">✕</button>
     </div>
     <div class="modal-body" id="modal-body-content"></div>
     <div class="modal-footer">
-      <button class="btn-modal-cancel" onclick="closeImportModal()">Abbrechen</button>
-      <button class="btn-modal-confirm" onclick="confirmImport()">✓ Importieren & übernehmen</button>
+      <button class="btn-modal-cancel" onclick="closeImportModal()" data-i18n="modal.cancel">Cancel</button>
+      <button class="btn-modal-confirm" onclick="confirmImport()" data-i18n="modal.confirm">✓ Import &amp; apply</button>
     </div>
   </div>
 </div>
@@ -590,49 +610,49 @@
 
   <!-- SIDEBAR -->
   <nav id="sidebar">
-    <div class="nav-section-label">Grundeinstellungen</div>
+    <div class="nav-section-label" data-i18n="nav.group.basics">General</div>
     <div class="nav-item active" onclick="showSection('basic', this)">
-      <span class="nav-icon">💻</span> Basiseinstellungen
+      <span class="nav-icon">💻</span> <span data-i18n="nav.basic">Basic settings</span>
     </div>
     <div class="nav-item" onclick="showSection('storage', this)">
-      <span class="nav-icon">💾</span> Speichergeräte
+      <span class="nav-icon">💾</span> <span data-i18n="nav.storage">Storage devices</span>
       <span class="nav-badge" id="badge-storage">0</span>
     </div>
     <div class="nav-item" onclick="showSection('network', this)">
-      <span class="nav-icon">🌐</span> Netzwerk
+      <span class="nav-icon">🌐</span> <span data-i18n="nav.network">Network</span>
       <span class="nav-badge" id="badge-network">0</span>
     </div>
     <div class="nav-item" onclick="showSection('gpu', this)">
-      <span class="nav-icon">🎮</span> GPU
+      <span class="nav-icon">🎮</span> <span data-i18n="nav.gpu">GPU</span>
     </div>
-    <div class="nav-section-label" style="margin-top:8px">Systemkonfiguration</div>
+    <div class="nav-section-label" style="margin-top:8px" data-i18n="nav.group.system">System configuration</div>
     <div class="nav-item" onclick="showSection('security', this)">
-      <span class="nav-icon">🔒</span> Sicherheit
+      <span class="nav-icon">🔒</span> <span data-i18n="nav.security">Security</span>
     </div>
     <div class="nav-item" onclick="showSection('comports', this)">
-      <span class="nav-icon">🔌</span> COM Ports
+      <span class="nav-icon">🔌</span> <span data-i18n="nav.comports">COM ports</span>
     </div>
     <div class="nav-item" onclick="showSection('statefiles', this)">
-      <span class="nav-icon">📁</span> State-Dateien
+      <span class="nav-icon">📁</span> <span data-i18n="nav.statefiles">State files</span>
     </div>
     <div class="nav-item" onclick="showSection('video', this)">
-      <span class="nav-icon">🖥️</span> Videomonitor
+      <span class="nav-icon">🖥️</span> <span data-i18n="nav.video">Video monitor</span>
     </div>
-    <div class="nav-section-label" style="margin-top:8px">Erweitert</div>
+    <div class="nav-section-label" style="margin-top:8px" data-i18n="nav.group.advanced">Advanced</div>
     <div class="nav-item" onclick="showSection('keyboard', this)">
-      <span class="nav-icon">⌨️</span> Tastatur
+      <span class="nav-icon">⌨️</span> <span data-i18n="nav.keyboard">Keyboard</span>
     </div>
     <div class="nav-item" onclick="showSection('enhanced', this)">
-      <span class="nav-icon">🔗</span> Enhanced Session
+      <span class="nav-icon">🔗</span> <span data-i18n="nav.enhanced">Enhanced Session</span>
     </div>
     <div class="nav-item" onclick="showSection('chipset', this)">
-      <span class="nav-icon">🔧</span> Chipsatz
+      <span class="nav-icon">🔧</span> <span data-i18n="nav.chipset">Chipset</span>
     </div>
     <div class="nav-item" onclick="showSection('policies', this)">
-      <span class="nav-icon">📋</span> Policies
+      <span class="nav-icon">📋</span> <span data-i18n="nav.policies">Policies</span>
     </div>
     <div class="nav-item" onclick="showSection('shares', this)">
-      <span class="nav-icon">📂</span> Shares
+      <span class="nav-icon">📂</span> <span data-i18n="nav.shares">Shares</span>
       <span class="nav-badge" id="badge-shares">0</span>
     </div>
   </nav>
@@ -645,22 +665,22 @@
       <div class="section-header">
         <div class="section-icon">💻</div>
         <div>
-          <div class="section-title">Basiseinstellungen</div>
-          <div class="section-desc">Name, Gast-Typ, CPU und RAM konfigurieren</div>
+          <div class="section-title" data-i18n="basic.title">Basic settings</div>
+          <div class="section-desc" data-i18n="basic.desc">Configure name, guest type, CPU and memory</div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header">🏷️ VM Identität</div>
+        <div class="card-header" data-i18n="basic.identity">🏷️ VM identity</div>
         <div class="card-body">
           <div class="field-grid">
             <div class="field">
-              <label class="field-label">VM-Name <span class="opt">(required)</span></label>
-              <input type="text" id="vm-name" placeholder="MeineVM" oninput="updatePreview(); updateStatePlaceholders()">
-              <div class="field-hint">Eindeutiger Name der virtuellen Maschine</div>
+              <label class="field-label" data-i18n="basic.name">VM name <span class="opt">(required)</span></label>
+              <input type="text" id="vm-name" placeholder="MyVM" oninput="updatePreview(); updateStatePlaceholders()">
+              <div class="field-hint" data-i18n="basic.name.hint">Unique name of the virtual machine</div>
             </div>
             <div class="field">
-              <label class="field-label">Gast-Betriebssystem</label>
+              <label class="field-label" data-i18n="basic.guest">Guest operating system</label>
               <select id="guest-type" onchange="updatePreview()">
                 <option value="Windows">Windows</option>
                 <option value="Linux">Linux</option>
@@ -672,23 +692,23 @@
       </div>
 
       <div class="card">
-        <div class="card-header">⚡ Ressourcen</div>
+        <div class="card-header" data-i18n="basic.resources">⚡ Resources</div>
         <div class="card-body">
           <div class="field-grid">
             <div class="field">
-              <label class="field-label">CPU-Kerne</label>
+              <label class="field-label" data-i18n="basic.cpu">CPU cores</label>
               <input type="number" id="cpu-count" value="2" min="1" max="128" oninput="updatePreview()">
-              <div class="field-hint">Anzahl virtueller Prozessorkerne</div>
+              <div class="field-hint" data-i18n="basic.cpu.hint">Number of virtual processor cores</div>
             </div>
             <div class="field">
-              <label class="field-label">Arbeitsspeicher (MB)</label>
+              <label class="field-label" data-i18n="basic.mem">Memory (MB)</label>
               <input type="number" id="mem-size" value="4096" min="512" step="512" oninput="updatePreview()">
-              <div class="field-hint">z.B. 2048 = 2 GB · 4096 = 4 GB · 8192 = 8 GB</div>
+              <div class="field-hint" data-i18n="basic.mem.hint">e.g. 2048 = 2 GB · 4096 = 4 GB · 8192 = 8 GB</div>
             </div>
           </div>
           <div class="sep"></div>
           <div style="display:flex;gap:12px;font-size:12px;color:var(--text-muted)">
-            <div>💡 Schnellauswahl RAM:</div>
+            <div data-i18n="basic.mem.quick">💡 Memory presets:</div>
             <span onclick="setMem(1024)" style="color:var(--accent);cursor:pointer">1 GB</span>
             <span onclick="setMem(2048)" style="color:var(--accent);cursor:pointer">2 GB</span>
             <span onclick="setMem(4096)" style="color:var(--accent);cursor:pointer">4 GB</span>
@@ -705,13 +725,13 @@
       <div class="section-header">
         <div class="section-icon">💾</div>
         <div>
-          <div class="section-title">Speichergeräte (SCSI)</div>
-          <div class="section-desc">Virtuelle Festplatten, ISO-Images und physische Laufwerke</div>
+          <div class="section-title" data-i18n="storage.title">Storage devices (SCSI)</div>
+          <div class="section-desc" data-i18n="storage.desc">Virtual hard disks, ISO images and physical drives</div>
         </div>
       </div>
-      <div class="info-box"><span class="icon">ℹ️</span> Unterstützte Typen: <strong>VirtualDisk</strong> (.vhdx, .vhd) · <strong>VirtualImage</strong> (.iso) · <strong>PhysicalDevice</strong> (\\.\PhysicalDriveX)</div>
+      <div class="info-box"><span class="icon">ℹ️</span><span data-i18n="storage.info">Supported types: <strong>VirtualDisk</strong> (.vhdx, .vhd) · <strong>VirtualImage</strong> (.iso) · <strong>PhysicalDevice</strong> (\\.\PhysicalDriveX)</span></div>
       <div class="array-list" id="scsi-list"></div>
-      <button class="btn-add" onclick="addScsiDevice()">＋ SCSI-Gerät hinzufügen</button>
+      <button class="btn-add" onclick="addScsiDevice()" data-i18n="storage.add">＋ Add SCSI device</button>
     </div>
 
     <!-- NETWORK -->
@@ -719,12 +739,12 @@
       <div class="section-header">
         <div class="section-icon">🌐</div>
         <div>
-          <div class="section-title">Netzwerkadapter</div>
-          <div class="section-desc">Virtuelle Netzwerkschnittstellen konfigurieren</div>
+          <div class="section-title" data-i18n="net.title">Network adapters</div>
+          <div class="section-desc" data-i18n="net.desc">Configure virtual network interfaces</div>
         </div>
       </div>
       <div class="array-list" id="net-list"></div>
-      <button class="btn-add" onclick="addNetAdapter()">＋ Netzwerkadapter hinzufügen</button>
+      <button class="btn-add" onclick="addNetAdapter()" data-i18n="net.add">＋ Add network adapter</button>
     </div>
 
     <!-- GPU -->
@@ -732,21 +752,21 @@
       <div class="section-header">
         <div class="section-icon">🎮</div>
         <div>
-          <div class="section-title">GPU-Einstellungen</div>
-          <div class="section-desc">GPU-Paravirtualisierung und Partitionierung</div>
+          <div class="section-title" data-i18n="gpu.title">GPU settings</div>
+          <div class="section-desc" data-i18n="gpu.desc">GPU paravirtualization and partitioning</div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🎯 Zuweisungsmodus</div>
+        <div class="card-header" data-i18n="gpu.mode.card">🎯 Assignment mode</div>
         <div class="card-body">
           <div class="field-grid">
             <div class="field">
               <label class="field-label">Assignment Mode</label>
               <select id="gpu-mode" onchange="gpuModeChanged(); updatePreview()">
-                <option value="Disabled">Disabled – Keine GPU</option>
-                <option value="Default">Default – Standard GPU (GPU-PV)</option>
-                <option value="Mirror" selected>Mirror – Alle GPUs (GPU-PV)</option>
-                <option value="List">List – Spezifische GPU(s)</option>
+                <option value="Disabled" data-i18n="gpu.mode.disabled">Disabled – no GPU</option>
+                <option value="Default" data-i18n="gpu.mode.default">Default – single default GPU (GPU-PV)</option>
+                <option value="Mirror" selected data-i18n="gpu.mode.mirror">Mirror – all GPUs (GPU-PV)</option>
+                <option value="List" data-i18n="gpu.mode.list">List – specific GPU(s)</option>
               </select>
             </div>
           </div>
@@ -754,18 +774,25 @@
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="toggle-label">EnableHostDriverStore</div>
-              <div class="toggle-desc">Readonly Plan 9 / SMB-Shares für GPU-PV-Ordner des Hosts freigeben</div>
+              <div class="toggle-desc" data-i18n="gpu.hds.desc">Expose read-only Plan 9 / SMB shares for the host's GPU-PV folders</div>
             </div>
             <label class="toggle"><input type="checkbox" id="gpu-hostdriver" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
+          <div class="info-box" style="margin-top:12px"><span class="icon">ℹ️</span><span data-i18n="gpu.hds.info">Creates the following read-only shares – their access names must not be reused for your own shares:<br>
+            • <strong>NanaBox.HostDrivers</strong> → %SystemRoot%\System32\DriverStore\FileRepository (since 1.5 Update 3, Virtual SMB since 1.6 Update 1)<br>
+            • <strong>NanaBox.HostLxssLib</strong> → %SystemRoot%\System32\lxss\lib (since 1.5 Update 3, for CUDA in Linux guests)<br>
+            • <strong>HostDriverStore</strong> → deprecated, kept for compatibility only</span>
+          </div>
+          <div class="warn-box" style="margin-top:12px" data-i18n="gpu.hds.warn">⚠️ With EnableHostDriverStore active the VM cannot be suspended properly.</div>
+          <div class="warn-box" id="gpu-share-name-warning" style="display:none;margin-top:12px"></div>
         </div>
       </div>
       <div class="card" id="gpu-devices-card" style="display:none">
-        <div class="card-header">🖥️ Ausgewählte Geräte (nur bei Modus "List")</div>
+        <div class="card-header" data-i18n="gpu.sel.card">🖥️ Selected devices (mode "List" only)</div>
         <div class="card-body">
-          <div class="warn-box">⚠️ Geräte-Interfaces aus dem Geräte-Manager oder PowerShell (Get-PnpDevice) ermitteln.</div>
+          <div class="warn-box" data-i18n="gpu.sel.warn">⚠️ Look up device interfaces in Device Manager or via PowerShell (Get-PnpDevice).</div>
           <div class="array-list" id="gpu-device-list"></div>
-          <button class="btn-add" onclick="addGpuDevice()">＋ GPU-Gerät hinzufügen</button>
+          <button class="btn-add" onclick="addGpuDevice()" data-i18n="gpu.sel.add">＋ Add GPU device</button>
         </div>
       </div>
     </div>
@@ -775,8 +802,8 @@
       <div class="section-header">
         <div class="section-icon">🔒</div>
         <div>
-          <div class="section-title">Sicherheitsfeatures</div>
-          <div class="section-desc">Secure Boot, TPM und Virtualisierungserweiterungen</div>
+          <div class="section-title" data-i18n="sec.title">Security features</div>
+          <div class="section-desc" data-i18n="sec.desc">Secure Boot, TPM and virtualization extensions</div>
         </div>
       </div>
       <div class="card">
@@ -784,21 +811,21 @@
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="toggle-label">Secure Boot</div>
-              <div class="toggle-desc">UEFI Secure Boot aktivieren (empfohlen für Windows 11)</div>
+              <div class="toggle-desc" data-i18n="sec.sb.desc">Enable UEFI Secure Boot (recommended for Windows 11)</div>
             </div>
             <label class="toggle"><input type="checkbox" id="sec-secureboot" checked onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="toggle-label">TPM 2.0 (Trusted Platform Module)</div>
-              <div class="toggle-desc">Virtuelles TPM aktivieren – benötigt Windows 11 24H2 Host oder neuer</div>
+              <div class="toggle-desc" data-i18n="sec.tpm.desc">Enable virtual TPM – requires a Windows 11 24H2 host or newer</div>
             </div>
             <label class="toggle"><input type="checkbox" id="sec-tpm" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-label">Virtualisierungserweiterungen (nested)</div>
-              <div class="toggle-desc">Intel VT-x / AMD-V an VM weitergeben (für Hyper-V in VM, etc.)</div>
+              <div class="toggle-label" data-i18n="sec.nested">Virtualization extensions (nested)</div>
+              <div class="toggle-desc" data-i18n="sec.nested.desc">Expose Intel VT-x / AMD-V to the VM (for Hyper-V inside the VM, etc.)</div>
             </div>
             <label class="toggle"><input type="checkbox" id="sec-virtex" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
@@ -811,15 +838,15 @@
       <div class="section-header">
         <div class="section-icon">🔌</div>
         <div>
-          <div class="section-title">COM Ports & UEFI Konsole</div>
-          <div class="section-desc">Serielle Schnittstellen und UEFI-Debug-Konsole</div>
+          <div class="section-title" data-i18n="com.title">COM ports &amp; UEFI console</div>
+          <div class="section-desc" data-i18n="com.desc">Serial interfaces and UEFI debug console</div>
         </div>
       </div>
       <div class="card">
         <div class="card-body">
           <div class="field-grid-1">
             <div class="field">
-              <label class="field-label">UEFI Konsole</label>
+              <label class="field-label" data-i18n="com.uefi">UEFI console</label>
               <select id="com-uefi" onchange="updatePreview()">
                 <option value="Disabled" selected>Disabled</option>
                 <option value="Default">Default</option>
@@ -828,12 +855,12 @@
               </select>
             </div>
             <div class="field">
-              <label class="field-label">ComPort1 Pipe-Pfad <span class="opt">(optional)</span></label>
+              <label class="field-label" data-i18n="com.p1">ComPort1 pipe path <span class="opt">(optional)</span></label>
               <input type="text" id="com-port1" placeholder="\\.\pipe\vmpipe1" oninput="updatePreview()">
-              <div class="field-hint">Named Pipe – z.B. für UEFI-Debugging mit WinDbg</div>
+              <div class="field-hint" data-i18n="com.p1.hint">Named pipe – e.g. for UEFI debugging with WinDbg</div>
             </div>
             <div class="field">
-              <label class="field-label">ComPort2 Pipe-Pfad <span class="opt">(optional)</span></label>
+              <label class="field-label" data-i18n="com.p2">ComPort2 pipe path <span class="opt">(optional)</span></label>
               <input type="text" id="com-port2" placeholder="\\.\pipe\vmpipe2" oninput="updatePreview()">
             </div>
           </div>
@@ -846,31 +873,31 @@
       <div class="section-header">
         <div class="section-icon">📁</div>
         <div>
-          <div class="section-title">State-Dateien</div>
-          <div class="section-desc">Pfade für Gast-, Laufzeit- und Speicherzustandsdateien</div>
+          <div class="section-title" data-i18n="state.title">State files</div>
+          <div class="section-desc" data-i18n="state.desc">Paths for guest, runtime and save state files</div>
         </div>
       </div>
-      <div class="info-box"><span class="icon">ℹ️</span> Relative Pfade werden unterstützt. Wenn leer, erstellt NanaBox automatisch neue Dateien.</div>
+      <div class="info-box"><span class="icon">ℹ️</span><span data-i18n="state.info">Relative paths are supported. If left blank, NanaBox creates the files automatically.</span></div>
       <div class="card">
         <div class="card-body">
           <div class="field-grid-1">
             <div class="field">
-              <label class="field-label">GuestStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span></label>
+              <label class="field-label" data-i18n="state.guest">GuestStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ required</span></label>
               <div class="input-row">
-                <input type="text" id="state-guest" placeholder="MeineVM.vmgs" oninput="updatePreview()">
-                <button class="btn-gen" onclick="autoFillStateFiles()">Auto</button>
+                <input type="text" id="state-guest" placeholder="MyVM.vmgs" oninput="updatePreview()">
+                <button class="btn-gen" onclick="autoFillStateFiles()" data-i18n="state.auto">Auto</button>
               </div>
-              <div class="field-hint">Pflichtfeld – Standard: &lt;VM-Name&gt;.vmgs</div>
+              <div class="field-hint" data-i18n="state.guest.hint">Required – default: &lt;VM name&gt;.vmgs</div>
             </div>
             <div class="field">
-              <label class="field-label">RuntimeStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span></label>
-              <input type="text" id="state-runtime" placeholder="MeineVM.vmrs" oninput="updatePreview()">
-              <div class="field-hint">Pflichtfeld – Standard: &lt;VM-Name&gt;.vmrs</div>
+              <label class="field-label" data-i18n="state.runtime">RuntimeStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ required</span></label>
+              <input type="text" id="state-runtime" placeholder="MyVM.vmrs" oninput="updatePreview()">
+              <div class="field-hint" data-i18n="state.runtime.hint">Required – default: &lt;VM name&gt;.vmrs</div>
             </div>
             <div class="field">
-              <label class="field-label">SaveStateFile <span class="opt">(optional, intern)</span></label>
-              <input type="text" id="state-save" placeholder="MeineVM.SaveState.vmrs" oninput="updatePreview()">
-              <div class="field-hint">Wird intern für Suspend/Resume verwendet</div>
+              <label class="field-label" data-i18n="state.save">SaveStateFile <span class="opt">(optional, internal)</span></label>
+              <input type="text" id="state-save" placeholder="MyVM.SaveState.vmrs" oninput="updatePreview()">
+              <div class="field-hint" data-i18n="state.save.hint">Used internally for suspend/resume</div>
             </div>
           </div>
         </div>
@@ -882,25 +909,25 @@
       <div class="section-header">
         <div class="section-icon">🖥️</div>
         <div>
-          <div class="section-title">Videomonitor</div>
-          <div class="section-desc">Auflösung und DPI-Skalierung (ab NanaBox 1.5)</div>
+          <div class="section-title" data-i18n="vid.title">Video monitor</div>
+          <div class="section-desc" data-i18n="vid.desc">Resolution and DPI scaling (since NanaBox 1.5)</div>
         </div>
       </div>
-      <div class="info-box"><span class="icon">ℹ️</span> Auflösungseinstellungen gelten nur für den Basic Session Mode (kein Enhanced Session).</div>
+      <div class="info-box"><span class="icon">ℹ️</span><span data-i18n="vid.info">Resolution settings only apply to Basic Session Mode (not Enhanced Session).</span></div>
       <div class="card">
         <div class="card-body">
           <div class="field-grid">
             <div class="field">
-              <label class="field-label">Horizontale Auflösung <span class="opt">(optional)</span></label>
+              <label class="field-label" data-i18n="vid.h">Horizontal resolution <span class="opt">(optional)</span></label>
               <input type="number" id="vid-h" placeholder="1920" oninput="updatePreview()">
             </div>
             <div class="field">
-              <label class="field-label">Vertikale Auflösung <span class="opt">(optional)</span></label>
+              <label class="field-label" data-i18n="vid.v">Vertical resolution <span class="opt">(optional)</span></label>
               <input type="number" id="vid-v" placeholder="1080" oninput="updatePreview()">
             </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:10px;font-size:12px;color:var(--text-muted)">
-            <div>Schnellauswahl:</div>
+            <div data-i18n="vid.quick">Presets:</div>
             <span onclick="setRes(1280,720)" style="color:var(--accent);cursor:pointer">1280×720</span>
             <span onclick="setRes(1920,1080)" style="color:var(--accent);cursor:pointer">1920×1080</span>
             <span onclick="setRes(2560,1440)" style="color:var(--accent);cursor:pointer">2560×1440</span>
@@ -909,8 +936,8 @@
           <div class="sep"></div>
           <div class="toggle-row">
             <div class="toggle-info">
-              <div class="toggle-label">DPI-Skalierung für Basic Session deaktivieren</div>
-              <div class="toggle-desc">DisableBasicSessionDpiScaling – ab NanaBox 1.5 Update 2</div>
+              <div class="toggle-label" data-i18n="vid.nodpi">Disable DPI scaling for Basic Session</div>
+              <div class="toggle-desc" data-i18n="vid.nodpi.desc">DisableBasicSessionDpiScaling – since NanaBox 1.5 Update 2</div>
             </div>
             <label class="toggle"><input type="checkbox" id="vid-nodpi" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
@@ -923,8 +950,8 @@
       <div class="section-header">
         <div class="section-icon">⌨️</div>
         <div>
-          <div class="section-title">Tastatureinstellungen</div>
-          <div class="section-desc">Hotkeys und Tastenkombinationen (ab NanaBox 1.1)</div>
+          <div class="section-title" data-i18n="kb.title">Keyboard settings</div>
+          <div class="section-desc" data-i18n="kb.desc">Hotkeys and key combinations (since NanaBox 1.1)</div>
         </div>
       </div>
       <div class="card">
@@ -932,26 +959,26 @@
           <div class="toggle-row">
             <div class="toggle-info">
               <div class="toggle-label">RedirectKeyCombinations</div>
-              <div class="toggle-desc">Tastenkombinationen an VM weiterleiten (immer, nicht nur im Vollbildmodus)</div>
+              <div class="toggle-desc" data-i18n="kb.redirect.desc">Apply key combinations to the VM always, not only in full-screen mode</div>
             </div>
             <label class="toggle"><input type="checkbox" id="kb-redirect" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🎹 Hotkey-Ersetzungen (Virtual Key Code, dezimal)</div>
+        <div class="card-header" data-i18n="kb.hotkeys">🎹 Hotkey replacements (virtual key code, decimal)</div>
         <div class="card-body">
-          <div class="info-box" style="margin-bottom:12px"><span class="icon">ℹ️</span> Diese Werte sind <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes" target="_blank" style="color:var(--accent)">Virtual-Key-Codes</a> als Dezimalzahlen. Leer = Standardverhalten.</div>
+          <div class="info-box" style="margin-bottom:12px"><span class="icon">ℹ️</span><span data-i18n="kb.info">These values are <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes" target="_blank" style="color:var(--accent)">virtual key codes</a> in decimal. Blank = default behaviour.</span></div>
           <div class="field-grid">
-            <div class="field"><label class="field-label">FullScreenHotkey</label><input type="number" id="kb-fs" placeholder="70 (F)" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Vollbild</div></div>
-            <div class="field"><label class="field-label">CtrlEscHotkey</label><input type="number" id="kb-ce" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → CTRL+ESC</div></div>
-            <div class="field"><label class="field-label">AltEscHotkey</label><input type="number" id="kb-ae" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+ESC</div></div>
-            <div class="field"><label class="field-label">AltTabHotkey</label><input type="number" id="kb-at" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+TAB</div></div>
-            <div class="field"><label class="field-label">AltShiftTabHotkey</label><input type="number" id="kb-ast" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+SHIFT+TAB</div></div>
-            <div class="field"><label class="field-label">AltSpaceHotkey</label><input type="number" id="kb-as" placeholder="" oninput="updatePreview()"><div class="field-hint">ALT+[Taste] → ALT+SPACE</div></div>
-            <div class="field"><label class="field-label">CtrlAltDelHotkey</label><input type="number" id="kb-cad" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → CTRL+ALT+DEL</div></div>
-            <div class="field"><label class="field-label">FocusReleaseLeftHotkey</label><input type="number" id="kb-frl" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Fokus freigeben links</div></div>
-            <div class="field"><label class="field-label">FocusReleaseRightHotkey</label><input type="number" id="kb-frr" placeholder="" oninput="updatePreview()"><div class="field-hint">CTRL+ALT+[Taste] → Fokus freigeben rechts</div></div>
+            <div class="field"><label class="field-label">FullScreenHotkey</label><input type="number" id="kb-fs" placeholder="70 (F)" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.fs.hint">CTRL+ALT+[key] → full screen</div></div>
+            <div class="field"><label class="field-label">CtrlEscHotkey</label><input type="number" id="kb-ce" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.ce.hint">ALT+[key] → CTRL+ESC</div></div>
+            <div class="field"><label class="field-label">AltEscHotkey</label><input type="number" id="kb-ae" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.ae.hint">ALT+[key] → ALT+ESC</div></div>
+            <div class="field"><label class="field-label">AltTabHotkey</label><input type="number" id="kb-at" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.at.hint">ALT+[key] → ALT+TAB</div></div>
+            <div class="field"><label class="field-label">AltShiftTabHotkey</label><input type="number" id="kb-ast" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.ast.hint">ALT+[key] → ALT+SHIFT+TAB</div></div>
+            <div class="field"><label class="field-label">AltSpaceHotkey</label><input type="number" id="kb-as" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.as.hint">ALT+[key] → ALT+SPACE</div></div>
+            <div class="field"><label class="field-label">CtrlAltDelHotkey</label><input type="number" id="kb-cad" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.cad.hint">CTRL+ALT+[key] → CTRL+ALT+DEL</div></div>
+            <div class="field"><label class="field-label">FocusReleaseLeftHotkey</label><input type="number" id="kb-frl" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.frl.hint">CTRL+ALT+[key] → release focus left</div></div>
+            <div class="field"><label class="field-label">FocusReleaseRightHotkey</label><input type="number" id="kb-frr" placeholder="" oninput="updatePreview()"><div class="field-hint" data-i18n="kb.frr.hint">CTRL+ALT+[key] → release focus right</div></div>
           </div>
         </div>
       </div>
@@ -963,35 +990,43 @@
         <div class="section-icon">🔗</div>
         <div>
           <div class="section-title">Enhanced Session</div>
-          <div class="section-desc">RDP-basierte Umleitung von Geräten und Ressourcen (ab NanaBox 1.1)</div>
+          <div class="section-desc" data-i18n="es.desc">RDP-based redirection of devices and resources (since NanaBox 1.1)</div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🔊 Audio & Zwischenablage</div>
+        <div class="card-header" data-i18n="es.audio.card">🔊 Audio &amp; clipboard</div>
         <div class="card-body">
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Audio umleiten</div><div class="toggle-desc">Sound von VM zum Host weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-audio" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Mikrofon umleiten</div><div class="toggle-desc">Audioaufnahme vom Host zur VM</div></div><label class="toggle"><input type="checkbox" id="es-audiocap" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Zwischenablage teilen</div><div class="toggle-desc">Copy/Paste zwischen Host und VM</div></div><label class="toggle"><input type="checkbox" id="es-clipboard" checked onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.audio">Redirect audio</div><div class="toggle-desc" data-i18n="es.audio.desc">Forward sound from the VM to the host</div></div><label class="toggle"><input type="checkbox" id="es-audio" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.mic">Redirect microphone</div><div class="toggle-desc" data-i18n="es.mic.desc">Audio capture from the host to the VM</div></div><label class="toggle"><input type="checkbox" id="es-audiocap" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.clip">Share clipboard</div><div class="toggle-desc" data-i18n="es.clip.desc">Copy/paste between host and VM</div></div><label class="toggle"><input type="checkbox" id="es-clipboard" checked onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">💿 Laufwerke & Geräte</div>
+        <div class="card-header" data-i18n="es.dev.card">💿 Drives &amp; devices</div>
         <div class="card-body">
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Alle Laufwerke umleiten</div><div class="toggle-desc">Alle Festplatten des Hosts in VM verfügbar machen</div></div><label class="toggle"><input type="checkbox" id="es-drives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Drucker umleiten</div><div class="toggle-desc">Host-Drucker in VM verwenden</div></div><label class="toggle"><input type="checkbox" id="es-printers" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Ports umleiten</div><div class="toggle-desc">COM- und LPT-Ports weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-ports" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Smartcards umleiten</div></div><label class="toggle"><input type="checkbox" id="es-smartcard" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Alle Geräte umleiten</div></div><label class="toggle"><input type="checkbox" id="es-devices" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">POS-Geräte umleiten</div><div class="toggle-desc">Point-of-Service-Geräte</div></div><label class="toggle"><input type="checkbox" id="es-pos" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Dynamische Laufwerke (PnP)</div><div class="toggle-desc">Nachträglich angesteckte Laufwerke weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-dyndrives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
-          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Dynamische Geräte (PnP)</div><div class="toggle-desc">Nachträglich angesteckte Geräte weiterleiten</div></div><label class="toggle"><input type="checkbox" id="es-dyndev" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.drives">Redirect all drives</div><div class="toggle-desc" data-i18n="es.drives.desc">Make all host disk drives available in the VM</div></div><label class="toggle"><input type="checkbox" id="es-drives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.print">Redirect printers</div><div class="toggle-desc" data-i18n="es.print.desc">Use host printers inside the VM</div></div><label class="toggle"><input type="checkbox" id="es-printers" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.ports">Redirect ports</div><div class="toggle-desc" data-i18n="es.ports.desc">Forward COM and LPT ports</div></div><label class="toggle"><input type="checkbox" id="es-ports" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.smart">Redirect smart cards</div></div><label class="toggle"><input type="checkbox" id="es-smartcard" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.alldev">Redirect all devices</div></div><label class="toggle"><input type="checkbox" id="es-devices" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.pos">Redirect POS devices</div><div class="toggle-desc" data-i18n="es.pos.desc">Point of Service devices</div></div><label class="toggle"><input type="checkbox" id="es-pos" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.dyndrv">Dynamic drives (PnP)</div><div class="toggle-desc" data-i18n="es.dyndrv.desc">Forward drives plugged in while the VM is running</div></div><label class="toggle"><input type="checkbox" id="es-dyndrives" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div class="toggle-info"><div class="toggle-label" data-i18n="es.dyndev">Dynamic devices (PnP)</div><div class="toggle-desc" data-i18n="es.dyndev.desc">Forward devices plugged in while the VM is running</div></div><label class="toggle"><input type="checkbox" id="es-dyndev" onchange="updatePreview()"><span class="toggle-slider"></span></label></div>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🗂️ Spezifische Laufwerke (Drives Array)</div>
+        <div class="card-header" data-i18n="es.drv.card">🗂️ Specific drives (Drives array)</div>
         <div class="card-body">
-          <div class="field-hint" style="margin-bottom:8px">Einzelne Laufwerksbuchstaben auswählen:</div>
+          <div class="field-hint" style="margin-bottom:8px" data-i18n="es.drv.hint">Select individual drive letters:</div>
           <div class="drives-row" id="drives-row"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" data-i18n="es.dev2.card">🔌 Specific devices (Devices array)</div>
+        <div class="card-body">
+          <div class="info-box"><span class="icon">ℹ️</span><span data-i18n="es.dev2.info">Redirect individual devices by <strong>device instance path</strong> – USB devices, for example. Look them up in Device Manager (Details → Device instance path) or via PowerShell <strong>Get-PnpDevice</strong>.</span></div>
+          <div class="array-list" id="es-device-list"></div>
+          <button class="btn-add" onclick="addEsDevice()" data-i18n="es.dev2.add">＋ Add device</button>
         </div>
       </div>
     </div>
@@ -1001,13 +1036,13 @@
       <div class="section-header">
         <div class="section-icon">🔧</div>
         <div>
-          <div class="section-title">Chipsatz / SMBIOS</div>
-          <div class="section-desc">SMBIOS-Felder für erweiterte OEM-Emulation (ab NanaBox 1.2 Update 4)</div>
+          <div class="section-title" data-i18n="chip.title">Chipset / SMBIOS</div>
+          <div class="section-desc" data-i18n="chip.desc">SMBIOS fields for advanced OEM emulation (since NanaBox 1.2 Update 4)</div>
         </div>
       </div>
-      <div class="warn-box">⚠️ Die meisten Felder benötigen Windows Server 2022 oder neueren Host. Leer = NanaBox-Standard.</div>
+      <div class="warn-box" data-i18n="chip.warn">⚠️ Most fields require a Windows Server 2022 host or newer. Blank = NanaBox default.</div>
       <div class="card">
-        <div class="card-header">🏭 Hersteller & Produkt</div>
+        <div class="card-header" data-i18n="chip.mfr.card">🏭 Manufacturer &amp; product</div>
         <div class="card-body">
           <div class="field-grid">
             <div class="field"><label class="field-label">Manufacturer <span class="opt">(opt.)</span></label><input type="text" id="ci-mfr" placeholder="Microsoft Corporation" oninput="updatePreview()"></div>
@@ -1019,7 +1054,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🔢 Seriennummern & UUID</div>
+        <div class="card-header" data-i18n="chip.sn.card">🔢 Serial numbers &amp; UUID</div>
         <div class="card-body">
           <div class="field-grid">
             <div class="field"><label class="field-label">SerialNumber <span class="opt">(opt.)</span></label><input type="text" id="ci-sn" placeholder="QTFCOU0000001" oninput="updatePreview()"></div>
@@ -1030,7 +1065,7 @@
               <label class="field-label">UUID <span class="opt">(opt.)</span></label>
               <div class="input-row">
                 <input type="text" id="ci-uuid" placeholder="12345678-abcd-efgh-ijkl-0123456789ab" oninput="updatePreview()">
-                <button class="btn-gen" onclick="genUUID()">Generieren</button>
+                <button class="btn-gen" onclick="genUUID()" data-i18n="chip.uuid.gen">Generate</button>
               </div>
             </div>
           </div>
@@ -1044,16 +1079,16 @@
         <div class="section-icon">📋</div>
         <div>
           <div class="section-title">Policies</div>
-          <div class="section-desc">Erweiterte Kompatibilitäts-Flags (ab NanaBox 1.5, benötigt Windows 11 24H2+)</div>
+          <div class="section-desc" data-i18n="pol.desc">Advanced compatibility flags (since NanaBox 1.5, requires Windows 11 24H2+)</div>
         </div>
       </div>
-      <div class="warn-box">⚠️ Diese Policies benötigen Windows 11 Version 24H2 oder neuer als Host.</div>
+      <div class="warn-box" data-i18n="pol.warn">⚠️ These policies require a Windows 11 version 24H2 host or newer.</div>
       <div class="card">
-        <div class="card-header">🏳️ Verfügbare Policies</div>
+        <div class="card-header" data-i18n="pol.card">🏳️ Available policies</div>
         <div class="card-body">
           <div class="policy-grid" id="policy-grid"></div>
           <div class="sep"></div>
-          <div class="info-box" style="margin:0"><span class="icon">💡</span> Für x86-Windows XP/Vista/7 auf Hyper-V Gen2: <strong>LegacyRteWidth</strong>, <strong>LegacyApicSelectionLogic</strong>, <strong>LegacyApicManganeseOverride</strong>, <strong>LegacyGpaLayout</strong> aktivieren.</div>
+          <div class="info-box" style="margin:0"><span class="icon">💡</span><span data-i18n="pol.tip">For x86 Windows XP/Vista/7 on Hyper-V Gen 2, enable <strong>LegacyRteWidth</strong>, <strong>LegacyApicSelectionLogic</strong>, <strong>LegacyApicManganeseOverride</strong> and <strong>LegacyGpaLayout</strong>.</span></div>
         </div>
       </div>
     </div>
@@ -1064,22 +1099,23 @@
         <div class="section-icon">📂</div>
         <div>
           <div class="section-title">Shares</div>
-          <div class="section-desc">Plan 9 Shares (ab 1.5 Update 2) & Virtual SMB Shares (ab 1.6 Update 1)</div>
+          <div class="section-desc" data-i18n="sh.desc">Plan 9 shares (since 1.5 Update 2) &amp; Virtual SMB shares (since 1.6 Update 1)</div>
         </div>
       </div>
-      <div class="warn-box">⚠️ Bei aktiven Shares kann die VM nicht korrekt suspendiert werden.</div>
+      <div class="warn-box" data-i18n="sh.warn">⚠️ With shares active the VM cannot be suspended properly.</div>
+      <div class="warn-box" id="share-name-warning" style="display:none"></div>
       <div class="card">
-        <div class="card-header">📡 Plan 9 Shares (Hyper-V Socket)</div>
+        <div class="card-header" data-i18n="sh.p9.card">📡 Plan 9 shares (Hyper-V Socket)</div>
         <div class="card-body">
           <div class="array-list" id="p9-list"></div>
-          <button class="btn-add" onclick="addP9Share()">＋ Plan 9 Share hinzufügen</button>
+          <button class="btn-add" onclick="addP9Share()" data-i18n="sh.p9.add">＋ Add Plan 9 share</button>
         </div>
       </div>
       <div class="card">
-        <div class="card-header">🗄️ Virtual SMB Shares</div>
+        <div class="card-header" data-i18n="sh.smb.card">🗄️ Virtual SMB shares</div>
         <div class="card-body">
           <div class="array-list" id="smb-list"></div>
-          <button class="btn-add" onclick="addSmbShare()">＋ Virtual SMB Share hinzufügen</button>
+          <button class="btn-add" onclick="addSmbShare()" data-i18n="sh.smb.add">＋ Add Virtual SMB share</button>
         </div>
       </div>
     </div>
@@ -1089,14 +1125,14 @@
   <!-- JSON PREVIEW -->
   <div class="preview-panel">
     <div class="preview-header">
-      <div class="preview-title">📄 Vorschau</div>
+      <div class="preview-title" data-i18n="prev.title">📄 Preview</div>
       <span class="preview-badge">.7b</span>
-      <button class="btn-download" onclick="downloadConfig()">⬇ Download</button>
+      <button class="btn-download" onclick="downloadConfig()" data-i18n="prev.download">⬇ Download</button>
     </div>
     <div class="preview-body"><pre id="json-preview">…</pre></div>
     <div class="preview-footer">
       <div class="status-dot"></div>
-      <span id="filename-label">MeineVM.7b</span>
+      <span id="filename-label">MyVM.7b</span>
       <span style="margin-left:auto" id="size-label">0 Bytes</span>
     </div>
   </div>
@@ -1110,6 +1146,271 @@ let netAdapters = [];
 let gpuDevices = [];
 let p9Shares = [];
 let smbShares = [];
+let esDevices = [];
+
+// ── I18N ──────────────────────────────────────────────────────────────────
+// English is the lead language: the markup carries the English text, and the
+// defaults below are harvested from it at startup. Only strings built in
+// JavaScript need an explicit English entry here.
+const I18N = {
+  en: {
+    'act.remove': 'Remove',
+    'opt': 'optional', 'since': 'since', 'yes': 'Yes', 'no': 'No', 'on': 'ON',
+    'scsi.type': 'Type', 'scsi.path': 'Path',
+    'scsi.browse': 'Choose file',
+    'scsi.ph.iso': 'setup.iso (blank = ejected drive)',
+    'net.adapter': 'Adapter', 'net.mac': 'MAC address',
+    'net.switchid': 'Switch GUID', 'net.switchname': 'Switch name', 'net.subnet': 'Subnet',
+    'gpu.pid.opt': '(blank = GPU-PV, otherwise GPU-P)',
+    'gpu.pid.ph': '65535 for GPU-PV',
+    'es.device': 'Device', 'es.devpath': 'Device instance path',
+    'sh.p9.item': 'Plan 9 share', 'sh.smb.item': 'SMB share',
+    'sh.name.access': 'Name (access name)', 'sh.port': 'Port (Hyper-V Socket)',
+    'sh.hostpath': 'Host path',
+    'pol.imported': 'imported',
+    'modal.jsonerr': 'JSON error:',
+    'sum.nopath': 'no path', 'sum.devices': 'device(s)', 'sum.shares': 'share(s)',
+    'sum.enabled': 'Enabled', 'sum.configured': 'Configured', 'sum.present': 'present',
+    'sum.active': 'active', 'sum.chipset': 'Chipset',
+    'toast.fname.title': 'File name applied',
+    'toast.fname.msg': 'Browser security does not expose the full path. Please complete it manually, e.g.',
+    'toast.badformat.title': 'Invalid format',
+    'toast.badformat.msg': 'is not a .7b or .json file.',
+    'toast.noroot.title': 'Not a NanaBox file',
+    'toast.noroot.msg': 'The file has no "NanaBox" root object.',
+    'toast.readerr.title': 'Read error',
+    'toast.readerr.msg': 'The file could not be read.',
+    'toast.import.title': 'Import successful',
+    'toast.import.msg': 'was loaded completely.',
+    'warn.reserved.pre': 'Reserved access name while <strong>EnableHostDriverStore</strong> is active:',
+    'warn.reserved.post': 'please rename it, otherwise the share collides with the one NanaBox creates.'
+  },
+  de: {
+    // header / chrome
+    'header.import': '⬆ Importieren',
+    'header.reference': '📄 Referenz',
+    'drop.title': 'Datei loslassen',
+    'drop.sub': '.7b-Konfigurationsdatei importieren',
+    'modal.title': 'Import-Vorschau',
+    'modal.cancel': 'Abbrechen',
+    'modal.confirm': '✓ Importieren &amp; übernehmen',
+    'modal.jsonerr': 'JSON-Fehler:',
+    'prev.title': '📄 Vorschau',
+    'prev.download': '⬇ Herunterladen',
+    // nav
+    'nav.group.basics': 'Grundeinstellungen',
+    'nav.group.system': 'Systemkonfiguration',
+    'nav.group.advanced': 'Erweitert',
+    'nav.basic': 'Basiseinstellungen', 'nav.storage': 'Speichergeräte',
+    'nav.network': 'Netzwerk', 'nav.gpu': 'GPU', 'nav.security': 'Sicherheit',
+    'nav.comports': 'COM-Ports', 'nav.statefiles': 'State-Dateien',
+    'nav.video': 'Videomonitor', 'nav.keyboard': 'Tastatur',
+    'nav.enhanced': 'Enhanced Session', 'nav.chipset': 'Chipsatz',
+    'nav.policies': 'Policies', 'nav.shares': 'Shares',
+    // basic
+    'basic.title': 'Basiseinstellungen',
+    'basic.desc': 'Name, Gast-Typ, CPU und Arbeitsspeicher konfigurieren',
+    'basic.identity': '🏷️ VM-Identität',
+    'basic.name': 'VM-Name <span class="opt">(Pflichtfeld)</span>',
+    'basic.name.hint': 'Eindeutiger Name der virtuellen Maschine',
+    'basic.guest': 'Gast-Betriebssystem',
+    'basic.resources': '⚡ Ressourcen',
+    'basic.cpu': 'CPU-Kerne',
+    'basic.cpu.hint': 'Anzahl virtueller Prozessorkerne',
+    'basic.mem': 'Arbeitsspeicher (MB)',
+    'basic.mem.hint': 'z.B. 2048 = 2 GB · 4096 = 4 GB · 8192 = 8 GB',
+    'basic.mem.quick': '💡 Schnellauswahl RAM:',
+    // storage
+    'storage.title': 'Speichergeräte (SCSI)',
+    'storage.desc': 'Virtuelle Festplatten, ISO-Images und physische Laufwerke',
+    'storage.info': 'Unterstützte Typen: <strong>VirtualDisk</strong> (.vhdx, .vhd) · <strong>VirtualImage</strong> (.iso) · <strong>PhysicalDevice</strong> (\\\\.\\PhysicalDriveX)',
+    'storage.add': '＋ SCSI-Gerät hinzufügen',
+    'scsi.type': 'Typ', 'scsi.path': 'Pfad',
+    'scsi.browse': 'Datei auswählen',
+    'scsi.ph.iso': 'setup.iso (leer = leeres Laufwerk)',
+    // network
+    'net.title': 'Netzwerkadapter',
+    'net.desc': 'Virtuelle Netzwerkschnittstellen konfigurieren',
+    'net.add': '＋ Netzwerkadapter hinzufügen',
+    'net.adapter': 'Adapter', 'net.mac': 'MAC-Adresse',
+    'net.switchid': 'Switch-GUID', 'net.switchname': 'Switch-Name', 'net.subnet': 'Subnetz',
+    // gpu
+    'gpu.title': 'GPU-Einstellungen',
+    'gpu.desc': 'GPU-Paravirtualisierung und Partitionierung',
+    'gpu.mode.card': '🎯 Zuweisungsmodus',
+    'gpu.mode.disabled': 'Disabled – keine GPU',
+    'gpu.mode.default': 'Default – einzelne Standard-GPU (GPU-PV)',
+    'gpu.mode.mirror': 'Mirror – alle GPUs (GPU-PV)',
+    'gpu.mode.list': 'List – bestimmte GPU(s)',
+    'gpu.hds.desc': 'Readonly Plan 9 / SMB-Shares für die GPU-PV-Ordner des Hosts freigeben',
+    'gpu.hds.info': 'Legt folgende Readonly-Shares an – deren Access Names dürfen nicht für eigene Shares verwendet werden:<br>\n            • <strong>NanaBox.HostDrivers</strong> → %SystemRoot%\\System32\\DriverStore\\FileRepository (ab 1.5 Update 3, Virtual SMB ab 1.6 Update 1)<br>\n            • <strong>NanaBox.HostLxssLib</strong> → %SystemRoot%\\System32\\lxss\\lib (ab 1.5 Update 3, für CUDA in Linux-Gästen)<br>\n            • <strong>HostDriverStore</strong> → veraltet, nur noch aus Kompatibilitätsgründen vorhanden',
+    'gpu.hds.warn': '⚠️ Bei aktivem EnableHostDriverStore kann die VM nicht korrekt suspendiert werden.',
+    'gpu.sel.card': '🖥️ Ausgewählte Geräte (nur im Modus „List“)',
+    'gpu.sel.warn': '⚠️ Geräte-Interfaces im Geräte-Manager oder per PowerShell (Get-PnpDevice) ermitteln.',
+    'gpu.sel.add': '＋ GPU-Gerät hinzufügen',
+    'gpu.pid.opt': '(leer = GPU-PV, sonst GPU-P)',
+    'gpu.pid.ph': '65535 für GPU-PV',
+    // security
+    'sec.title': 'Sicherheitsfeatures',
+    'sec.desc': 'Secure Boot, TPM und Virtualisierungserweiterungen',
+    'sec.sb.desc': 'UEFI Secure Boot aktivieren (empfohlen für Windows 11)',
+    'sec.tpm.desc': 'Virtuelles TPM aktivieren – benötigt Windows 11 24H2 als Host oder neuer',
+    'sec.nested': 'Virtualisierungserweiterungen (nested)',
+    'sec.nested.desc': 'Intel VT-x / AMD-V an die VM weitergeben (für Hyper-V in der VM usw.)',
+    // com ports
+    'com.title': 'COM-Ports &amp; UEFI-Konsole',
+    'com.desc': 'Serielle Schnittstellen und UEFI-Debug-Konsole',
+    'com.uefi': 'UEFI-Konsole',
+    'com.p1': 'ComPort1 Pipe-Pfad <span class="opt">(optional)</span>',
+    'com.p1.hint': 'Named Pipe – z.B. für UEFI-Debugging mit WinDbg',
+    'com.p2': 'ComPort2 Pipe-Pfad <span class="opt">(optional)</span>',
+    // state files
+    'state.title': 'State-Dateien',
+    'state.desc': 'Pfade für Gast-, Laufzeit- und Speicherzustandsdateien',
+    'state.info': 'Relative Pfade werden unterstützt. Wenn leer, erstellt NanaBox die Dateien automatisch.',
+    'state.guest': 'GuestStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span>',
+    'state.guest.hint': 'Pflichtfeld – Standard: &lt;VM-Name&gt;.vmgs',
+    'state.runtime': 'RuntimeStateFile <span style="color:var(--danger);font-size:11px;font-weight:700">✱ Pflichtfeld</span>',
+    'state.runtime.hint': 'Pflichtfeld – Standard: &lt;VM-Name&gt;.vmrs',
+    'state.save': 'SaveStateFile <span class="opt">(optional, intern)</span>',
+    'state.save.hint': 'Wird intern für Suspend/Resume verwendet',
+    'state.auto': 'Auto',
+    // video
+    'vid.title': 'Videomonitor',
+    'vid.desc': 'Auflösung und DPI-Skalierung (ab NanaBox 1.5)',
+    'vid.info': 'Auflösungseinstellungen gelten nur für den Basic Session Mode (nicht Enhanced Session).',
+    'vid.h': 'Horizontale Auflösung <span class="opt">(optional)</span>',
+    'vid.v': 'Vertikale Auflösung <span class="opt">(optional)</span>',
+    'vid.quick': 'Schnellauswahl:',
+    'vid.nodpi': 'DPI-Skalierung für Basic Session deaktivieren',
+    'vid.nodpi.desc': 'DisableBasicSessionDpiScaling – ab NanaBox 1.5 Update 2',
+    // keyboard
+    'kb.title': 'Tastatureinstellungen',
+    'kb.desc': 'Hotkeys und Tastenkombinationen (ab NanaBox 1.1)',
+    'kb.redirect.desc': 'Tastenkombinationen immer an die VM weiterleiten, nicht nur im Vollbildmodus',
+    'kb.hotkeys': '🎹 Hotkey-Ersetzungen (Virtual Key Code, dezimal)',
+    'kb.info': 'Diese Werte sind <a href="https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes" target="_blank" style="color:var(--accent)">Virtual-Key-Codes</a> als Dezimalzahlen. Leer = Standardverhalten.',
+    'kb.fs.hint': 'STRG+ALT+[Taste] → Vollbild',
+    'kb.ce.hint': 'ALT+[Taste] → STRG+ESC',
+    'kb.ae.hint': 'ALT+[Taste] → ALT+ESC',
+    'kb.at.hint': 'ALT+[Taste] → ALT+TAB',
+    'kb.ast.hint': 'ALT+[Taste] → ALT+UMSCHALT+TAB',
+    'kb.as.hint': 'ALT+[Taste] → ALT+LEERTASTE',
+    'kb.cad.hint': 'STRG+ALT+[Taste] → STRG+ALT+ENTF',
+    'kb.frl.hint': 'STRG+ALT+[Taste] → Fokus links freigeben',
+    'kb.frr.hint': 'STRG+ALT+[Taste] → Fokus rechts freigeben',
+    // enhanced session
+    'es.desc': 'RDP-basierte Umleitung von Geräten und Ressourcen (ab NanaBox 1.1)',
+    'es.audio.card': '🔊 Audio &amp; Zwischenablage',
+    'es.audio': 'Audio umleiten', 'es.audio.desc': 'Sound von der VM zum Host weiterleiten',
+    'es.mic': 'Mikrofon umleiten', 'es.mic.desc': 'Audioaufnahme vom Host zur VM',
+    'es.clip': 'Zwischenablage teilen', 'es.clip.desc': 'Kopieren/Einfügen zwischen Host und VM',
+    'es.dev.card': '💿 Laufwerke &amp; Geräte',
+    'es.drives': 'Alle Laufwerke umleiten', 'es.drives.desc': 'Alle Festplatten des Hosts in der VM verfügbar machen',
+    'es.print': 'Drucker umleiten', 'es.print.desc': 'Host-Drucker in der VM verwenden',
+    'es.ports': 'Ports umleiten', 'es.ports.desc': 'COM- und LPT-Ports weiterleiten',
+    'es.smart': 'Smartcards umleiten',
+    'es.alldev': 'Alle Geräte umleiten',
+    'es.pos': 'POS-Geräte umleiten', 'es.pos.desc': 'Point-of-Service-Geräte',
+    'es.dyndrv': 'Dynamische Laufwerke (PnP)', 'es.dyndrv.desc': 'Im laufenden Betrieb angesteckte Laufwerke weiterleiten',
+    'es.dyndev': 'Dynamische Geräte (PnP)', 'es.dyndev.desc': 'Im laufenden Betrieb angesteckte Geräte weiterleiten',
+    'es.drv.card': '🗂️ Spezifische Laufwerke (Drives-Array)',
+    'es.drv.hint': 'Einzelne Laufwerksbuchstaben auswählen:',
+    'es.dev2.card': '🔌 Spezifische Geräte (Devices-Array)',
+    'es.dev2.info': 'Einzelne Geräte per <strong>Device Instance Path</strong> umleiten – z.B. USB-Geräte. Ermittelbar im Geräte-Manager (Details → Geräteinstanzpfad) oder per PowerShell <strong>Get-PnpDevice</strong>.',
+    'es.dev2.add': '＋ Gerät hinzufügen',
+    'es.device': 'Gerät', 'es.devpath': 'Device Instance Path',
+    // chipset
+    'chip.title': 'Chipsatz / SMBIOS',
+    'chip.desc': 'SMBIOS-Felder für erweiterte OEM-Emulation (ab NanaBox 1.2 Update 4)',
+    'chip.warn': '⚠️ Die meisten Felder benötigen Windows Server 2022 als Host oder neuer. Leer = NanaBox-Standard.',
+    'chip.mfr.card': '🏭 Hersteller &amp; Produkt',
+    'chip.sn.card': '🔢 Seriennummern &amp; UUID',
+    'chip.uuid.gen': 'Generieren',
+    // policies
+    'pol.desc': 'Erweiterte Kompatibilitäts-Flags (ab NanaBox 1.5, benötigt Windows 11 24H2+)',
+    'pol.warn': '⚠️ Diese Policies benötigen Windows 11 Version 24H2 als Host oder neuer.',
+    'pol.card': '🏳️ Verfügbare Policies',
+    'pol.tip': 'Für x86-Windows XP/Vista/7 auf Hyper-V Gen 2: <strong>LegacyRteWidth</strong>, <strong>LegacyApicSelectionLogic</strong>, <strong>LegacyApicManganeseOverride</strong> und <strong>LegacyGpaLayout</strong> aktivieren.',
+    'pol.imported': 'importiert',
+    // shares
+    'sh.desc': 'Plan 9 Shares (ab 1.5 Update 2) &amp; Virtual SMB Shares (ab 1.6 Update 1)',
+    'sh.warn': '⚠️ Bei aktiven Shares kann die VM nicht korrekt suspendiert werden.',
+    'sh.p9.card': '📡 Plan 9 Shares (Hyper-V Socket)',
+    'sh.p9.add': '＋ Plan 9 Share hinzufügen',
+    'sh.smb.card': '🗄️ Virtual SMB Shares',
+    'sh.smb.add': '＋ Virtual SMB Share hinzufügen',
+    'sh.p9.item': 'Plan 9 Share', 'sh.smb.item': 'SMB Share',
+    'sh.name.access': 'Name (Access Name)', 'sh.port': 'Port (Hyper-V Socket)',
+    'sh.hostpath': 'Host-Pfad',
+    // shared / generated
+    'act.remove': 'Entfernen',
+    'opt': 'optional', 'since': 'ab', 'yes': 'Ja', 'no': 'Nein', 'on': 'AN',
+    'sum.nopath': 'kein Pfad', 'sum.devices': 'Gerät(e)', 'sum.shares': 'Share(s)',
+    'sum.enabled': 'Aktiviert', 'sum.configured': 'Konfiguriert', 'sum.present': 'vorhanden',
+    'sum.active': 'aktiv', 'sum.chipset': 'Chipsatz',
+    'toast.fname.title': 'Dateiname übernommen',
+    'toast.fname.msg': 'Browser-Sicherheit gibt den vollständigen Pfad nicht preis. Bitte manuell ergänzen, z.B.',
+    'toast.badformat.title': 'Ungültiges Format',
+    'toast.badformat.msg': 'ist keine .7b- oder .json-Datei.',
+    'toast.noroot.title': 'Kein NanaBox-Format',
+    'toast.noroot.msg': 'Die Datei enthält kein „NanaBox“-Root-Objekt.',
+    'toast.readerr.title': 'Lesefehler',
+    'toast.readerr.msg': 'Die Datei konnte nicht gelesen werden.',
+    'toast.import.title': 'Import erfolgreich',
+    'toast.import.msg': 'wurde vollständig geladen.',
+    'warn.reserved.pre': 'Reservierter Access Name bei aktivem <strong>EnableHostDriverStore</strong>:',
+    'warn.reserved.post': 'bitte umbenennen, sonst kollidiert der Share mit dem von NanaBox erzeugten.'
+  }
+};
+
+const LANGS = ['en','de'];
+let lang = 'en';
+
+// The markup is authored in English, so the English dictionary is completed
+// from the DOM once, before any translation is applied.
+function captureEnglishDefaults() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    const k = el.getAttribute('data-i18n');
+    if(I18N.en[k] === undefined) I18N.en[k] = el.innerHTML;
+  });
+}
+
+function t(key) {
+  const v = I18N[lang] && I18N[lang][key];
+  return v !== undefined ? v : (I18N.en[key] !== undefined ? I18N.en[key] : key);
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    el.innerHTML = t(el.getAttribute('data-i18n'));
+  });
+  document.documentElement.lang = lang;
+  LANGS.forEach(function(l) {
+    const b = document.getElementById('lang-' + l);
+    if(b) b.classList.toggle('active', l === lang);
+  });
+}
+
+function setLang(l) {
+  if(LANGS.indexOf(l) === -1) l = 'en';
+  lang = l;
+  try { localStorage.setItem('nanabox-lang', l); } catch(e) {}
+  applyI18n();
+  // Everything rendered from JavaScript has to be rebuilt in the new language.
+  renderScsiList(); renderNetList(); renderGpuDevices(); renderEsDevices();
+  renderShares(); renderPolicyGrid(); renderDrivesRow();
+  updatePreview();
+}
+
+function initialLang() {
+  try {
+    const saved = localStorage.getItem('nanabox-lang');
+    if(saved && LANGS.indexOf(saved) !== -1) return saved;
+  } catch(e) {}
+  return (navigator.language || '').toLowerCase().startsWith('de') ? 'de' : 'en';
+}
+
 
 const POLICIES = [
   'LegacyPcrMeasurement','DisableSha384Pcr','LegacyRteWidth',
@@ -1117,27 +1418,18 @@ const POLICIES = [
   'LegacyApicManganeseOverride','LegacyGpaLayout','ForceLegacyHcl',
   'ForceCurrentHcl','UseExtendedMaxVpPerSocketLimit'
 ];
+// Policies from imported files that this generator does not know yet
+let customPolicies = [];
+
+// Reservierte Access Names der EnableHostDriverStore-Shares (ab 1.2 / 1.5 Update 3)
+const RESERVED_SHARE_NAMES = ['HostDriverStore','NanaBox.HostDrivers','NanaBox.HostLxssLib'];
 const DRIVES = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 function init() {
-  // Policy grid
-  const pg = document.getElementById('policy-grid');
-  POLICIES.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'policy-item';
-    div.innerHTML = `<input type="checkbox" id="pol-${p}" onchange="updatePreview()"><label for="pol-${p}">${p}</label>`;
-    pg.appendChild(div);
-  });
-
-  // Drives row
-  const dr = document.getElementById('drives-row');
-  DRIVES.forEach(d => {
-    const div = document.createElement('div');
-    div.className = 'drive-chip';
-    div.innerHTML = `<input type="checkbox" id="drv-${d}" onchange="updatePreview()"><label for="drv-${d}">${d}:</label>`;
-    dr.appendChild(div);
-  });
+  captureEnglishDefaults();
+  renderPolicyGrid();
+  renderDrivesRow();
 
   // Default SCSI (VirtualDisk + VirtualImage)
   addScsiDevice('VirtualDisk');
@@ -1146,7 +1438,40 @@ function init() {
   // Default net adapter
   addNetAdapter();
 
-  updatePreview();
+  setLang(initialLang());
+}
+
+// Rebuilds the drive-letter chips, preserving what is already ticked.
+function renderDrivesRow() {
+  const dr = document.getElementById('drives-row');
+  const checked = {};
+  dr.querySelectorAll('input[type=checkbox]').forEach(cb => { checked[cb.id] = cb.checked; });
+  dr.innerHTML = '';
+  DRIVES.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'drive-chip';
+    const id = 'drv-' + d;
+    div.innerHTML = `<input type="checkbox" id="${id}"${checked[id] ? ' checked' : ''} onchange="updatePreview()"><label for="${id}">${d}:</label>`;
+    dr.appendChild(div);
+  });
+}
+
+// Rebuilds the policy grid - known policies plus any carried over from an
+// imported file that this generator does not know yet.
+function renderPolicyGrid() {
+  const pg = document.getElementById('policy-grid');
+  const checked = {};
+  pg.querySelectorAll('input[type=checkbox]').forEach(cb => { checked[cb.id] = cb.checked; });
+  pg.innerHTML = '';
+  POLICIES.concat(customPolicies).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'policy-item';
+    const id = 'pol-' + p;
+    const isCustom = POLICIES.indexOf(p) === -1;
+    div.innerHTML = `<input type="checkbox" id="${escHtml(id)}"${checked[id] ? ' checked' : ''} onchange="updatePreview()">`
+      + `<label for="${escHtml(id)}">${escHtml(p)}${isCustom ? ' <span class="opt">(' + t('pol.imported') + ')</span>' : ''}</label>`;
+    pg.appendChild(div);
+  });
 }
 
 // ── NAVIGATION ──────────────────────────────────────────────────────────────
@@ -1180,12 +1505,12 @@ function renderScsiList() {
     item.innerHTML = `
       <div class="array-item-header">
         💾 SCSI #${i}
-        <button class="btn-remove" onclick="removeScsiDevice(${dev.id})">✕ Entfernen</button>
+        <button class="btn-remove" onclick="removeScsiDevice(${dev.id})">✕ ${t('act.remove')}</button>
       </div>
       <div class="array-item-body">
         <div class="field-grid">
           <div class="field">
-            <label class="field-label">Typ</label>
+            <label class="field-label">${t('scsi.type')}</label>
             <select id="scsi-type-${dev.id}" onchange="scsiTypeChanged(${dev.id}); updatePreview()">
               <option value="VirtualDisk" ${dev.type==='VirtualDisk'?'selected':''}>VirtualDisk (.vhdx, .vhd)</option>
               <option value="VirtualImage" ${dev.type==='VirtualImage'?'selected':''}>VirtualImage (.iso)</option>
@@ -1193,12 +1518,12 @@ function renderScsiList() {
             </select>
           </div>
           <div class="field">
-            <label class="field-label">Pfad</label>
+            <label class="field-label">${t('scsi.path')}</label>
             <div class="input-row">
-              <input type="text" id="scsi-path-${dev.id}" value="${dev.path}" 
+              <input type="text" id="scsi-path-${dev.id}" value="${escHtml(dev.path)}" 
                 placeholder="${placeholderForType(dev.type)}" 
                 oninput="scsiPathChanged(${dev.id}, this.value)">
-              ${dev.type !== 'PhysicalDevice' ? `<button class="btn-browse" title="Datei auswählen" onclick="browsePath(${dev.id})">📁</button>
+              ${dev.type !== 'PhysicalDevice' ? `<button class="btn-browse" title="${t('scsi.browse')}" onclick="browsePath(${dev.id})">📁</button>
               <input type="file" id="scsi-file-${dev.id}" style="display:none"
                 accept="${acceptForType(dev.type)}"
                 onchange="filePickerChosen(${dev.id}, this)">` : ''}
@@ -1211,9 +1536,9 @@ function renderScsiList() {
   document.getElementById('badge-storage').textContent = scsiDevices.length;
 }
 
-function placeholderForType(t) {
-  if(t==='VirtualDisk') return 'Windows 11.vhdx';
-  if(t==='VirtualImage') return 'setup.iso (leer = Leeres Laufwerk)';
+function placeholderForType(type) {
+  if(type==='VirtualDisk') return 'Windows 11.vhdx';
+  if(type==='VirtualImage') return t('scsi.ph.iso');
   return '\\\\.\\PhysicalDrive0';
 }
 
@@ -1243,8 +1568,7 @@ function browsePath(id) {
         if(el) {
           el.value = fh.name;
           scsiPathChanged(id, fh.name);
-          showToast('info', 'Dateiname übernommen',
-            'Browser-Sicherheit erlaubt keinen vollständigen Pfad. Bitte ergänze den Pfad manuell (z.B. <code>C:\\VMs\\' + fh.name + '</code>).');
+          showToast('info', t('toast.fname.title'), t('toast.fname.msg') + ' <code>C:\\VMs\\' + escHtml(fh.name) + '</code>.');
         }
       })
       .catch(e => { if(e.name !== 'AbortError') console.warn(e); });
@@ -1263,8 +1587,7 @@ function filePickerChosen(id, input) {
   if(el) {
     el.value = name;
     scsiPathChanged(id, name);
-    showToast('info', 'Dateiname übernommen',
-      'Browser-Sicherheit erlaubt keinen vollständigen Pfad. Bitte ergänze den Pfad manuell (z.B. <code>C:\\VMs\\' + name + '</code>).');
+    showToast('info', t('toast.fname.title'), t('toast.fname.msg') + ' <code>C:\\VMs\\' + escHtml(name) + '</code>.');
   }
   input.value = '';
 }
@@ -1300,40 +1623,40 @@ function renderNetList() {
     item.className = 'array-item';
     item.innerHTML = `
       <div class="array-item-header">
-        🌐 Adapter #${i}
-        <button class="btn-remove" onclick="removeNetAdapter(${ad.id})">✕ Entfernen</button>
+        🌐 ${t('net.adapter')} #${i}
+        <button class="btn-remove" onclick="removeNetAdapter(${ad.id})">✕ ${t('act.remove')}</button>
       </div>
       <div class="array-item-body">
         <div class="field-grid">
           <div class="field">
-            <label class="field-label">MAC-Adresse <span class="opt">(optional)</span></label>
+            <label class="field-label">${t('net.mac')} <span class="opt">(${t('opt')})</span></label>
             <div class="input-row">
-              <input type="text" id="net-mac-${ad.id}" value="${ad.mac}" placeholder="00-15-5D-XX-XX-XX" 
+              <input type="text" id="net-mac-${ad.id}" value="${escHtml(ad.mac)}" placeholder="00-15-5D-XX-XX-XX" 
                 oninput="netChanged(${ad.id})">
               <button class="btn-gen" onclick="genMac(${ad.id})">Rnd</button>
             </div>
           </div>
           <div class="field">
-            <label class="field-label">Endpoint ID <span class="opt">(optional)</span></label>
+            <label class="field-label">Endpoint ID <span class="opt">(${t('opt')})</span></label>
             <div class="input-row">
-              <input type="text" id="net-ep-${ad.id}" value="${ad.endpoint}" placeholder="GUID" 
+              <input type="text" id="net-ep-${ad.id}" value="${escHtml(ad.endpoint)}" placeholder="GUID" 
                 oninput="netChanged(${ad.id})">
               <button class="btn-gen" onclick="genEndpoint(${ad.id})">Rnd</button>
             </div>
           </div>
           <div class="field">
-            <label class="field-label">Switch-GUID <span class="opt">(optional, ab 1.6.1)</span></label>
-            <input type="text" id="net-sw-${ad.id}" value="${ad.switchId}" placeholder="85c8668e-36fe-447f-aae0-ba159a0142a7" 
+            <label class="field-label">${t('net.switchid')} <span class="opt">(${t('opt')}, ${t('since')} 1.6.1)</span></label>
+            <input type="text" id="net-sw-${ad.id}" value="${escHtml(ad.switchId)}" placeholder="85c8668e-36fe-447f-aae0-ba159a0142a7" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field">
-            <label class="field-label">Switch-Name <span class="opt">(optional)</span></label>
-            <input type="text" id="net-swn-${ad.id}" value="${ad.switchName}" placeholder="Custom Switch" 
+            <label class="field-label">${t('net.switchname')} <span class="opt">(${t('opt')})</span></label>
+            <input type="text" id="net-swn-${ad.id}" value="${escHtml(ad.switchName)}" placeholder="Custom Switch" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field">
-            <label class="field-label">Subnetz <span class="opt">(optional)</span></label>
-            <input type="text" id="net-sub-${ad.id}" value="${ad.switchSubnet}" placeholder="172.22.78.0/24" 
+            <label class="field-label">${t('net.subnet')} <span class="opt">(${t('opt')})</span></label>
+            <input type="text" id="net-sub-${ad.id}" value="${escHtml(ad.switchSubnet)}" placeholder="172.22.78.0/24" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field" style="justify-content:flex-end;padding-top:16px">
@@ -1390,14 +1713,14 @@ function renderGpuDevices() {
         <div class="field-grid-1">
           <div class="field">
             <label class="field-label">DeviceInterface</label>
-            <input type="text" id="gpu-if-${dev.id}" value="${dev.iface}" 
+            <input type="text" id="gpu-if-${dev.id}" value="${escHtml(dev.iface)}" 
               placeholder="\\\\?\\PCI#VEN_10DE&DEV_1C82...\\GPUPARAV" 
               oninput="gpuDevChanged(${dev.id})">
           </div>
           <div class="field">
-            <label class="field-label">PartitionId <span class="opt">(leer = GPU-PV, sonst GPU-P)</span></label>
-            <input type="number" id="gpu-pid-${dev.id}" value="${dev.partitionId}" 
-              placeholder="65535 für GPU-PV"
+            <label class="field-label">PartitionId <span class="opt">${t('gpu.pid.opt')}</span></label>
+            <input type="number" id="gpu-pid-${dev.id}" value="${escHtml(dev.partitionId)}" 
+              placeholder="${t('gpu.pid.ph')}"
               oninput="gpuDevChanged(${dev.id})">
           </div>
         </div>
@@ -1410,6 +1733,48 @@ function gpuDevChanged(id) {
   if(!d) return;
   d.iface = document.getElementById('gpu-if-' + id).value;
   d.partitionId = document.getElementById('gpu-pid-' + id).value;
+  updatePreview();
+}
+
+// ── ENHANCED SESSION DEVICES ──────────────────────────────────────────────
+function addEsDevice() {
+  const id = Date.now() + Math.random();
+  esDevices.push({ id, path: '' });
+  renderEsDevices();
+  updatePreview();
+}
+function removeEsDevice(id) {
+  esDevices = esDevices.filter(d => d.id !== id);
+  renderEsDevices();
+  updatePreview();
+}
+function renderEsDevices() {
+  const list = document.getElementById('es-device-list');
+  list.innerHTML = '';
+  esDevices.forEach((dev, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">🔌 ${t('es.device')} #${i}
+        <button class="btn-remove" onclick="removeEsDevice(${dev.id})">✕</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid-1">
+          <div class="field">
+            <label class="field-label">${t('es.devpath')}</label>
+            <input type="text" id="es-dev-${dev.id}" value="${escHtml(dev.path)}"
+              placeholder="USB\\VID_5986&amp;PID_211C&amp;MI_00\\6&amp;218C4A3&amp;0&amp;0000"
+              oninput="esDeviceChanged(${dev.id})">
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function esDeviceChanged(id) {
+  const d = esDevices.find(x => x.id === id);
+  if(!d) return;
+  d.path = document.getElementById('es-dev-' + id).value;
   updatePreview();
 }
 
@@ -1445,17 +1810,17 @@ function renderShares() {
     const item = document.createElement('div');
     item.className = 'array-item';
     item.innerHTML = `
-      <div class="array-item-header">📡 Plan 9 Share #${i}
+      <div class="array-item-header">📡 ${t('sh.p9.item')} #${i}
         <button class="btn-remove" onclick="removeP9Share(${sh.id})">✕</button>
       </div>
       <div class="array-item-body">
         <div class="field-grid">
-          <div class="field"><label class="field-label">Name (Access Name)</label>
-            <input type="text" id="p9-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="p9Changed(${sh.id})"></div>
-          <div class="field"><label class="field-label">Port (Hyper-V Socket)</label>
-            <input type="number" id="p9-port-${sh.id}" value="${sh.port}" placeholder="50001" oninput="p9Changed(${sh.id})"></div>
-          <div class="field" style="grid-column:span 2"><label class="field-label">Host-Pfad</label>
-            <input type="text" id="p9-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="p9Changed(${sh.id})"></div>
+          <div class="field"><label class="field-label">${t('sh.name.access')}</label>
+            <input type="text" id="p9-name-${sh.id}" value="${escHtml(sh.name)}" placeholder="HostProjects" oninput="p9Changed(${sh.id})"></div>
+          <div class="field"><label class="field-label">${t('sh.port')}</label>
+            <input type="number" id="p9-port-${sh.id}" value="${escHtml(sh.port)}" placeholder="50001" oninput="p9Changed(${sh.id})"></div>
+          <div class="field" style="grid-column:span 2"><label class="field-label">${t('sh.hostpath')}</label>
+            <input type="text" id="p9-path-${sh.id}" value="${escHtml(sh.path)}" placeholder="D:\\Projects" oninput="p9Changed(${sh.id})"></div>
         </div>
         <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
           <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
@@ -1471,15 +1836,15 @@ function renderShares() {
     const item = document.createElement('div');
     item.className = 'array-item';
     item.innerHTML = `
-      <div class="array-item-header">🗄️ SMB Share #${i}
+      <div class="array-item-header">🗄️ ${t('sh.smb.item')} #${i}
         <button class="btn-remove" onclick="removeSmbShare(${sh.id})">✕</button>
       </div>
       <div class="array-item-body">
         <div class="field-grid">
           <div class="field"><label class="field-label">Name</label>
-            <input type="text" id="smb-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="smbChanged(${sh.id})"></div>
-          <div class="field"><label class="field-label">Host-Pfad</label>
-            <input type="text" id="smb-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="smbChanged(${sh.id})"></div>
+            <input type="text" id="smb-name-${sh.id}" value="${escHtml(sh.name)}" placeholder="HostProjects" oninput="smbChanged(${sh.id})"></div>
+          <div class="field"><label class="field-label">${t('sh.hostpath')}</label>
+            <input type="text" id="smb-path-${sh.id}" value="${escHtml(sh.path)}" placeholder="D:\\Projects" oninput="smbChanged(${sh.id})"></div>
         </div>
         <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
           <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
@@ -1550,7 +1915,7 @@ function autoFillStateFiles() {
   updatePreview();
 }
 function updateStatePlaceholders() {
-  const name = document.getElementById('vm-name').value || 'MeineVM';
+  const name = document.getElementById('vm-name').value || 'MyVM';
   const gf = document.getElementById('state-guest');
   const rf = document.getElementById('state-runtime');
   if(gf) gf.placeholder = name + '.vmgs';
@@ -1559,7 +1924,7 @@ function updateStatePlaceholders() {
 
 // ── CONFIG BUILDER ────────────────────────────────────────────────────────
 function buildConfig() {
-  const name = document.getElementById('vm-name').value || 'MeineVM';
+  const name = document.getElementById('vm-name').value || 'MyVM';
   const vm = {
     Type: 'VirtualMachine',
     Version: 1,
@@ -1623,7 +1988,7 @@ function buildConfig() {
   if(tpm) vm.Tpm = true;
 
   // State files — GuestStateFile + RuntimeStateFile always required by NanaBox
-  const name_ = document.getElementById('vm-name').value || 'MeineVM';
+  const name_ = document.getElementById('vm-name').value || 'MyVM';
   const gf = document.getElementById('state-guest').value || (name_ + '.vmgs');
   const rf = document.getElementById('state-runtime').value || (name_ + '.vmrs');
   const sf = document.getElementById('state-save').value;
@@ -1665,6 +2030,8 @@ function buildConfig() {
   Object.entries(esBools).forEach(([k,id]) => { if(document.getElementById(id).checked) esObj[k] = true; });
   const selectedDrives = DRIVES.filter(d => document.getElementById('drv-' + d)?.checked);
   if(selectedDrives.length > 0) esObj.Drives = selectedDrives;
+  const selectedDevices = esDevices.map(d => d.path.trim()).filter(p => p);
+  if(selectedDevices.length > 0) esObj.Devices = selectedDevices;
   if(Object.keys(esObj).length > 0) vm.EnhancedSession = esObj;
 
   // Video Monitor
@@ -1692,7 +2059,8 @@ function buildConfig() {
   if(Object.keys(ciObj).length > 0) vm.ChipsetInformation = ciObj;
 
   // Policies
-  const activePolicies = POLICIES.filter(p => document.getElementById('pol-' + p)?.checked);
+  const activePolicies = POLICIES.concat(customPolicies)
+    .filter(p => document.getElementById('pol-' + p)?.checked);
   if(activePolicies.length > 0) vm.Policies = activePolicies;
 
   // Plan9 Shares
@@ -1736,11 +2104,31 @@ function highlight(json) {
 }
 
 // ── UPDATE PREVIEW ────────────────────────────────────────────────────────
+// Warnt, wenn ein eigener Share einen der Access Names belegt, die NanaBox bei
+// aktivem EnableHostDriverStore selbst vergibt.
+function checkReservedShareNames() {
+  const boxes = [document.getElementById('share-name-warning'),
+                 document.getElementById('gpu-share-name-warning')];
+  const enabled = document.getElementById('gpu-hostdriver').checked;
+  const clashes = enabled
+    ? p9Shares.concat(smbShares)
+        .map(sh => sh.name.trim())
+        .filter(n => RESERVED_SHARE_NAMES.some(r => r.toLowerCase() === n.toLowerCase()))
+    : [];
+  if(clashes.length === 0) { boxes.forEach(b => { b.style.display = 'none'; }); return; }
+  const unique = clashes.filter((n, i) => clashes.indexOf(n) === i);
+  const msg = '⚠️ ' + t('warn.reserved.pre') + ' '
+    + unique.map(n => '<strong>' + escHtml(n) + '</strong>').join(', ')
+    + ' – ' + t('warn.reserved.post');
+  boxes.forEach(b => { b.innerHTML = msg; b.style.display = ''; });
+}
+
 function updatePreview() {
+  checkReservedShareNames();
   const cfg = buildConfig();
   const json = JSON.stringify(cfg, null, 2);
   document.getElementById('json-preview').innerHTML = highlight(json);
-  const name = cfg.NanaBox.Name || 'MeineVM';
+  const name = cfg.NanaBox.Name || 'MyVM';
   document.getElementById('filename-label').textContent = name + '.7b';
   document.getElementById('size-label').textContent = new Blob(['\uFEFF'+json]).size + ' Bytes (UTF-8 BOM)';
 }
@@ -1755,7 +2143,7 @@ function downloadConfig() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = (cfg.NanaBox.Name || 'MeineVM') + '.7b';
+  a.download = (cfg.NanaBox.Name || 'MyVM') + '.7b';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1809,7 +2197,7 @@ var pendingImport = null;
 function processImportFile(file) {
   var validExt = file.name.endsWith('.7b') || file.name.endsWith('.json');
   if(!validExt) {
-    showToast('error', 'Ungültiges Format', '"' + file.name + '" ist keine .7b oder .json Datei.');
+    showToast('error', t('toast.badformat.title'), '"' + escHtml(file.name) + '" ' + t('toast.badformat.msg'));
     return;
   }
   var reader = new FileReader();
@@ -1819,7 +2207,7 @@ function processImportFile(file) {
     try {
       var cfg = JSON.parse(text);
       if(!cfg.NanaBox) {
-        showToast('error', 'Kein NanaBox-Format', 'Die Datei enthält kein "NanaBox" Root-Objekt.');
+        showToast('error', t('toast.noroot.title'), t('toast.noroot.msg'));
         return;
       }
       pendingImport = cfg;
@@ -1828,7 +2216,7 @@ function processImportFile(file) {
       showImportError(err.message);
     }
   };
-  reader.onerror = function() { showToast('error', 'Lesefehler', 'Die Datei konnte nicht gelesen werden.'); };
+  reader.onerror = function() { showToast('error', t('toast.readerr.title'), t('toast.readerr.msg')); };
   reader.readAsText(file, 'utf-8');
 }
 
@@ -1838,7 +2226,7 @@ function escHtml(s) {
 
 function showImportError(msg) {
   var body = document.getElementById('modal-body-content');
-  body.innerHTML = '<div class="parse-error">⚠️ JSON-Fehler:<br><br>' + escHtml(msg) + '</div>';
+  body.innerHTML = '<div class="parse-error">⚠️ ' + t('modal.jsonerr') + '<br><br>' + escHtml(msg) + '</div>';
   document.getElementById('import-modal').classList.add('active');
   document.querySelector('.btn-modal-confirm').style.display = 'none';
 }
@@ -1857,24 +2245,27 @@ function showImportModal(cfg, filename) {
   rows.push(row('ProcessorCount', vm.ProcessorCount != null ? vm.ProcessorCount : '–'));
   rows.push(row('MemorySize', vm.MemorySize ? vm.MemorySize + ' MB (' + (vm.MemorySize/1024).toFixed(1) + ' GB)' : '–'));
   if(vm.ScsiDevices && vm.ScsiDevices.length) {
-    vm.ScsiDevices.forEach(function(d,i) { rows.push(row('ScsiDevices['+i+']', d.Type + (d.Path ? ': '+d.Path : ' (kein Pfad)'), {cls:'badge-ok',text:d.Type})); });
+    vm.ScsiDevices.forEach(function(d,i) { rows.push(row('ScsiDevices['+i+']', d.Type + (d.Path ? ': '+d.Path : ' (' + t('sum.nopath') + ')'), {cls:'badge-ok',text:d.Type})); });
   }
   if(vm.NetworkAdapters && vm.NetworkAdapters.length) {
     vm.NetworkAdapters.forEach(function(a,i) { rows.push(row('NetworkAdapters['+i+']', (a.Connected?'Connected':'Disconnected') + ' · MAC: ' + (a.MacAddress||'auto'))); });
   }
   if(vm.Gpu) rows.push(row('GPU AssignmentMode', vm.Gpu.AssignmentMode || '–'));
-  rows.push(row('SecureBoot', vm.SecureBoot ? 'Ja' : 'Nein', vm.SecureBoot ? {cls:'badge-ok',text:'AN'} : null));
-  rows.push(row('TPM', vm.Tpm ? 'Ja' : 'Nein', vm.Tpm ? {cls:'badge-ok',text:'AN'} : null));
-  if(vm.ExposeVirtualizationExtensions) rows.push(row('Nested Virt.', 'Aktiviert', {cls:'badge-ok',text:'AN'}));
+  rows.push(row('SecureBoot', vm.SecureBoot ? t('yes') : t('no'), vm.SecureBoot ? {cls:'badge-ok',text:t('on')} : null));
+  rows.push(row('TPM', vm.Tpm ? t('yes') : t('no'), vm.Tpm ? {cls:'badge-ok',text:t('on')} : null));
+  if(vm.ExposeVirtualizationExtensions) rows.push(row('Nested Virt.', t('sum.enabled'), {cls:'badge-ok',text:t('on')}));
   if(vm.GuestStateFile) rows.push(row('GuestStateFile', vm.GuestStateFile));
   if(vm.RuntimeStateFile) rows.push(row('RuntimeStateFile', vm.RuntimeStateFile));
-  if(vm.Keyboard) rows.push(row('Keyboard', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
-  if(vm.EnhancedSession) rows.push(row('Enhanced Session', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
+  if(vm.Keyboard) rows.push(row('Keyboard', t('sum.configured'), {cls:'badge-ok',text:t('sum.present')}));
+  if(vm.EnhancedSession) rows.push(row('Enhanced Session', t('sum.configured'), {cls:'badge-ok',text:t('sum.present')}));
+  if(vm.EnhancedSession && vm.EnhancedSession.Devices && vm.EnhancedSession.Devices.length) {
+    rows.push(row('  └ Devices', vm.EnhancedSession.Devices.length + ' ' + t('sum.devices'), {cls:'badge-ok',text:vm.EnhancedSession.Devices.length+'×'}));
+  }
   if(vm.VideoMonitor) rows.push(row('VideoMonitor', (vm.VideoMonitor.HorizontalResolution||'?') + '×' + (vm.VideoMonitor.VerticalResolution||'?')));
-  if(vm.ChipsetInformation) { var ci = vm.ChipsetInformation; rows.push(row('Chipsatz', ((ci.Manufacturer||'')+' '+(ci.ProductName||'')).trim() || 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'})); }
-  if(vm.Policies && vm.Policies.length) rows.push(row('Policies', vm.Policies.join(', '), {cls:'badge-warn',text:vm.Policies.length+' aktiv'}));
-  if(vm.Plan9Shares && vm.Plan9Shares.length) rows.push(row('Plan9Shares', vm.Plan9Shares.length + ' Share(s)', {cls:'badge-ok',text:vm.Plan9Shares.length+'×'}));
-  if(vm.VirtualSmbShares && vm.VirtualSmbShares.length) rows.push(row('VirtualSmbShares', vm.VirtualSmbShares.length + ' Share(s)', {cls:'badge-ok',text:vm.VirtualSmbShares.length+'×'}));
+  if(vm.ChipsetInformation) { var ci = vm.ChipsetInformation; rows.push(row(t('sum.chipset'), ((ci.Manufacturer||'')+' '+(ci.ProductName||'')).trim() || t('sum.configured'), {cls:'badge-ok',text:t('sum.present')})); }
+  if(vm.Policies && vm.Policies.length) rows.push(row('Policies', vm.Policies.join(', '), {cls:'badge-warn',text:vm.Policies.length+' '+t('sum.active')}));
+  if(vm.Plan9Shares && vm.Plan9Shares.length) rows.push(row('Plan9Shares', vm.Plan9Shares.length + ' ' + t('sum.shares'), {cls:'badge-ok',text:vm.Plan9Shares.length+'×'}));
+  if(vm.VirtualSmbShares && vm.VirtualSmbShares.length) rows.push(row('VirtualSmbShares', vm.VirtualSmbShares.length + ' ' + t('sum.shares'), {cls:'badge-ok',text:vm.VirtualSmbShares.length+'×'}));
   document.getElementById('modal-body-content').innerHTML = rows.join('');
   document.getElementById('import-modal').classList.add('active');
 }
@@ -1889,7 +2280,7 @@ function confirmImport() {
   var name = pendingImport.NanaBox && pendingImport.NanaBox.Name ? pendingImport.NanaBox.Name : 'VM';
   applyConfig(pendingImport);
   closeImportModal();
-  showToast('success', 'Import erfolgreich', '"' + name + '" wurde vollständig geladen.');
+  showToast('success', t('toast.import.title'), '"' + escHtml(name) + '" ' + t('toast.import.msg'));
   pendingImport = null;
 }
 
@@ -1961,6 +2352,13 @@ function applyConfig(cfg) {
     var el = document.getElementById('drv-' + d);
     if(el) el.checked = Array.isArray(es.Drives) && es.Drives.indexOf(d) !== -1;
   });
+  esDevices = [];
+  if(Array.isArray(es.Devices)) {
+    es.Devices.forEach(function(p) {
+      if(typeof p === 'string') esDevices.push({id:Date.now()+Math.random(), path:p});
+    });
+  }
+  renderEsDevices();
   var vid = vm.VideoMonitor || {};
   setVal('vid-h', vid.HorizontalResolution != null ? vid.HorizontalResolution : '');
   setVal('vid-v', vid.VerticalResolution   != null ? vid.VerticalResolution   : '');
@@ -1976,9 +2374,14 @@ function applyConfig(cfg) {
   setVal('ci-cssn', ci.ChassisSerialNumber || '');
   setVal('ci-cat',  ci.ChassisAssetTag || '');
   setVal('ci-uuid', ci.UUID || '');
-  POLICIES.forEach(function(p) {
+  var importedPolicies = Array.isArray(vm.Policies) ? vm.Policies.filter(function(p) { return typeof p === 'string'; }) : [];
+  customPolicies = importedPolicies.filter(function(p, i) {
+    return POLICIES.indexOf(p) === -1 && importedPolicies.indexOf(p) === i;
+  });
+  renderPolicyGrid();
+  POLICIES.concat(customPolicies).forEach(function(p) {
     var el = document.getElementById('pol-' + p);
-    if(el) el.checked = Array.isArray(vm.Policies) && vm.Policies.indexOf(p) !== -1;
+    if(el) el.checked = importedPolicies.indexOf(p) !== -1;
   });
   p9Shares = [];
   if(Array.isArray(vm.Plan9Shares)) {
