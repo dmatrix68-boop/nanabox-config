@@ -758,6 +758,13 @@
             </div>
             <label class="toggle"><input type="checkbox" id="gpu-hostdriver" onchange="updatePreview()"><span class="toggle-slider"></span></label>
           </div>
+          <div class="info-box" style="margin-top:12px"><span class="icon">ℹ️</span><span>Aktiviert folgende Readonly-Shares – diese Access Names dürfen dann nicht für eigene Shares verwendet werden:<br>
+            • <strong>NanaBox.HostDrivers</strong> → %SystemRoot%\System32\DriverStore\FileRepository (ab 1.5 Update 3, Virtual SMB ab 1.6 Update 1)<br>
+            • <strong>NanaBox.HostLxssLib</strong> → %SystemRoot%\System32\lxss\lib (ab 1.5 Update 3, für CUDA in Linux-Gästen)<br>
+            • <strong>HostDriverStore</strong> → veraltet, nur noch aus Kompatibilitätsgründen vorhanden</span>
+          </div>
+          <div class="warn-box" style="margin-top:12px">⚠️ Bei aktivem EnableHostDriverStore kann die VM nicht korrekt suspendiert werden.</div>
+          <div class="warn-box" id="gpu-share-name-warning" style="display:none;margin-top:12px"></div>
         </div>
       </div>
       <div class="card" id="gpu-devices-card" style="display:none">
@@ -994,6 +1001,14 @@
           <div class="drives-row" id="drives-row"></div>
         </div>
       </div>
+      <div class="card">
+        <div class="card-header">🔌 Spezifische Geräte (Devices Array)</div>
+        <div class="card-body">
+          <div class="info-box"><span class="icon">ℹ️</span><span>Einzelne Geräte per <strong>Device Instance Path</strong> umleiten – z.B. USB-Geräte. Ermittelbar im Geräte-Manager (Details → Geräteinstanzpfad) oder per PowerShell <strong>Get-PnpDevice</strong>.</span></div>
+          <div class="array-list" id="es-device-list"></div>
+          <button class="btn-add" onclick="addEsDevice()">＋ Gerät hinzufügen</button>
+        </div>
+      </div>
     </div>
 
     <!-- CHIPSET -->
@@ -1068,6 +1083,7 @@
         </div>
       </div>
       <div class="warn-box">⚠️ Bei aktiven Shares kann die VM nicht korrekt suspendiert werden.</div>
+      <div class="warn-box" id="share-name-warning" style="display:none"></div>
       <div class="card">
         <div class="card-header">📡 Plan 9 Shares (Hyper-V Socket)</div>
         <div class="card-body">
@@ -1110,6 +1126,7 @@ let netAdapters = [];
 let gpuDevices = [];
 let p9Shares = [];
 let smbShares = [];
+let esDevices = [];
 
 const POLICIES = [
   'LegacyPcrMeasurement','DisableSha384Pcr','LegacyRteWidth',
@@ -1117,18 +1134,16 @@ const POLICIES = [
   'LegacyApicManganeseOverride','LegacyGpaLayout','ForceLegacyHcl',
   'ForceCurrentHcl','UseExtendedMaxVpPerSocketLimit'
 ];
+// Policies aus importierten Dateien, die NanaBox nach diesem Stand ergänzt hat
+let customPolicies = [];
+
+// Reservierte Access Names der EnableHostDriverStore-Shares (ab 1.2 / 1.5 Update 3)
+const RESERVED_SHARE_NAMES = ['HostDriverStore','NanaBox.HostDrivers','NanaBox.HostLxssLib'];
 const DRIVES = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 function init() {
-  // Policy grid
-  const pg = document.getElementById('policy-grid');
-  POLICIES.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'policy-item';
-    div.innerHTML = `<input type="checkbox" id="pol-${p}" onchange="updatePreview()"><label for="pol-${p}">${p}</label>`;
-    pg.appendChild(div);
-  });
+  renderPolicyGrid();
 
   // Drives row
   const dr = document.getElementById('drives-row');
@@ -1147,6 +1162,24 @@ function init() {
   addNetAdapter();
 
   updatePreview();
+}
+
+// Baut das Policy-Raster neu auf – bekannte Policies plus solche, die aus einer
+// importierten Datei stammen und hier noch nicht bekannt sind.
+function renderPolicyGrid() {
+  const pg = document.getElementById('policy-grid');
+  const checked = {};
+  pg.querySelectorAll('input[type=checkbox]').forEach(cb => { checked[cb.id] = cb.checked; });
+  pg.innerHTML = '';
+  POLICIES.concat(customPolicies).forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'policy-item';
+    const id = 'pol-' + p;
+    const isCustom = POLICIES.indexOf(p) === -1;
+    div.innerHTML = `<input type="checkbox" id="${escHtml(id)}"${checked[id] ? ' checked' : ''} onchange="updatePreview()">`
+      + `<label for="${escHtml(id)}">${escHtml(p)}${isCustom ? ' <span class="opt">(importiert)</span>' : ''}</label>`;
+    pg.appendChild(div);
+  });
 }
 
 // ── NAVIGATION ──────────────────────────────────────────────────────────────
@@ -1195,7 +1228,7 @@ function renderScsiList() {
           <div class="field">
             <label class="field-label">Pfad</label>
             <div class="input-row">
-              <input type="text" id="scsi-path-${dev.id}" value="${dev.path}" 
+              <input type="text" id="scsi-path-${dev.id}" value="${escHtml(dev.path)}" 
                 placeholder="${placeholderForType(dev.type)}" 
                 oninput="scsiPathChanged(${dev.id}, this.value)">
               ${dev.type !== 'PhysicalDevice' ? `<button class="btn-browse" title="Datei auswählen" onclick="browsePath(${dev.id})">📁</button>
@@ -1308,7 +1341,7 @@ function renderNetList() {
           <div class="field">
             <label class="field-label">MAC-Adresse <span class="opt">(optional)</span></label>
             <div class="input-row">
-              <input type="text" id="net-mac-${ad.id}" value="${ad.mac}" placeholder="00-15-5D-XX-XX-XX" 
+              <input type="text" id="net-mac-${ad.id}" value="${escHtml(ad.mac)}" placeholder="00-15-5D-XX-XX-XX" 
                 oninput="netChanged(${ad.id})">
               <button class="btn-gen" onclick="genMac(${ad.id})">Rnd</button>
             </div>
@@ -1316,24 +1349,24 @@ function renderNetList() {
           <div class="field">
             <label class="field-label">Endpoint ID <span class="opt">(optional)</span></label>
             <div class="input-row">
-              <input type="text" id="net-ep-${ad.id}" value="${ad.endpoint}" placeholder="GUID" 
+              <input type="text" id="net-ep-${ad.id}" value="${escHtml(ad.endpoint)}" placeholder="GUID" 
                 oninput="netChanged(${ad.id})">
               <button class="btn-gen" onclick="genEndpoint(${ad.id})">Rnd</button>
             </div>
           </div>
           <div class="field">
             <label class="field-label">Switch-GUID <span class="opt">(optional, ab 1.6.1)</span></label>
-            <input type="text" id="net-sw-${ad.id}" value="${ad.switchId}" placeholder="85c8668e-36fe-447f-aae0-ba159a0142a7" 
+            <input type="text" id="net-sw-${ad.id}" value="${escHtml(ad.switchId)}" placeholder="85c8668e-36fe-447f-aae0-ba159a0142a7" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field">
             <label class="field-label">Switch-Name <span class="opt">(optional)</span></label>
-            <input type="text" id="net-swn-${ad.id}" value="${ad.switchName}" placeholder="Custom Switch" 
+            <input type="text" id="net-swn-${ad.id}" value="${escHtml(ad.switchName)}" placeholder="Custom Switch" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field">
             <label class="field-label">Subnetz <span class="opt">(optional)</span></label>
-            <input type="text" id="net-sub-${ad.id}" value="${ad.switchSubnet}" placeholder="172.22.78.0/24" 
+            <input type="text" id="net-sub-${ad.id}" value="${escHtml(ad.switchSubnet)}" placeholder="172.22.78.0/24" 
               oninput="netChanged(${ad.id})">
           </div>
           <div class="field" style="justify-content:flex-end;padding-top:16px">
@@ -1390,13 +1423,13 @@ function renderGpuDevices() {
         <div class="field-grid-1">
           <div class="field">
             <label class="field-label">DeviceInterface</label>
-            <input type="text" id="gpu-if-${dev.id}" value="${dev.iface}" 
+            <input type="text" id="gpu-if-${dev.id}" value="${escHtml(dev.iface)}" 
               placeholder="\\\\?\\PCI#VEN_10DE&DEV_1C82...\\GPUPARAV" 
               oninput="gpuDevChanged(${dev.id})">
           </div>
           <div class="field">
             <label class="field-label">PartitionId <span class="opt">(leer = GPU-PV, sonst GPU-P)</span></label>
-            <input type="number" id="gpu-pid-${dev.id}" value="${dev.partitionId}" 
+            <input type="number" id="gpu-pid-${dev.id}" value="${escHtml(dev.partitionId)}" 
               placeholder="65535 für GPU-PV"
               oninput="gpuDevChanged(${dev.id})">
           </div>
@@ -1410,6 +1443,48 @@ function gpuDevChanged(id) {
   if(!d) return;
   d.iface = document.getElementById('gpu-if-' + id).value;
   d.partitionId = document.getElementById('gpu-pid-' + id).value;
+  updatePreview();
+}
+
+// ── ENHANCED SESSION DEVICES ──────────────────────────────────────────────
+function addEsDevice() {
+  const id = Date.now() + Math.random();
+  esDevices.push({ id, path: '' });
+  renderEsDevices();
+  updatePreview();
+}
+function removeEsDevice(id) {
+  esDevices = esDevices.filter(d => d.id !== id);
+  renderEsDevices();
+  updatePreview();
+}
+function renderEsDevices() {
+  const list = document.getElementById('es-device-list');
+  list.innerHTML = '';
+  esDevices.forEach((dev, i) => {
+    const item = document.createElement('div');
+    item.className = 'array-item';
+    item.innerHTML = `
+      <div class="array-item-header">🔌 Gerät #${i}
+        <button class="btn-remove" onclick="removeEsDevice(${dev.id})">✕</button>
+      </div>
+      <div class="array-item-body">
+        <div class="field-grid-1">
+          <div class="field">
+            <label class="field-label">Device Instance Path</label>
+            <input type="text" id="es-dev-${dev.id}" value="${escHtml(dev.path)}"
+              placeholder="USB\\VID_5986&amp;PID_211C&amp;MI_00\\6&amp;218C4A3&amp;0&amp;0000"
+              oninput="esDeviceChanged(${dev.id})">
+          </div>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function esDeviceChanged(id) {
+  const d = esDevices.find(x => x.id === id);
+  if(!d) return;
+  d.path = document.getElementById('es-dev-' + id).value;
   updatePreview();
 }
 
@@ -1451,11 +1526,11 @@ function renderShares() {
       <div class="array-item-body">
         <div class="field-grid">
           <div class="field"><label class="field-label">Name (Access Name)</label>
-            <input type="text" id="p9-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="p9Changed(${sh.id})"></div>
+            <input type="text" id="p9-name-${sh.id}" value="${escHtml(sh.name)}" placeholder="HostProjects" oninput="p9Changed(${sh.id})"></div>
           <div class="field"><label class="field-label">Port (Hyper-V Socket)</label>
-            <input type="number" id="p9-port-${sh.id}" value="${sh.port}" placeholder="50001" oninput="p9Changed(${sh.id})"></div>
+            <input type="number" id="p9-port-${sh.id}" value="${escHtml(sh.port)}" placeholder="50001" oninput="p9Changed(${sh.id})"></div>
           <div class="field" style="grid-column:span 2"><label class="field-label">Host-Pfad</label>
-            <input type="text" id="p9-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="p9Changed(${sh.id})"></div>
+            <input type="text" id="p9-path-${sh.id}" value="${escHtml(sh.path)}" placeholder="D:\\Projects" oninput="p9Changed(${sh.id})"></div>
         </div>
         <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
           <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
@@ -1477,9 +1552,9 @@ function renderShares() {
       <div class="array-item-body">
         <div class="field-grid">
           <div class="field"><label class="field-label">Name</label>
-            <input type="text" id="smb-name-${sh.id}" value="${sh.name}" placeholder="HostProjects" oninput="smbChanged(${sh.id})"></div>
+            <input type="text" id="smb-name-${sh.id}" value="${escHtml(sh.name)}" placeholder="HostProjects" oninput="smbChanged(${sh.id})"></div>
           <div class="field"><label class="field-label">Host-Pfad</label>
-            <input type="text" id="smb-path-${sh.id}" value="${sh.path}" placeholder="D:\\Projects" oninput="smbChanged(${sh.id})"></div>
+            <input type="text" id="smb-path-${sh.id}" value="${escHtml(sh.path)}" placeholder="D:\\Projects" oninput="smbChanged(${sh.id})"></div>
         </div>
         <div class="toggle-row" style="border:none;margin-top:8px;padding:0">
           <div class="toggle-info"><div class="toggle-label">ReadOnly</div></div>
@@ -1665,6 +1740,8 @@ function buildConfig() {
   Object.entries(esBools).forEach(([k,id]) => { if(document.getElementById(id).checked) esObj[k] = true; });
   const selectedDrives = DRIVES.filter(d => document.getElementById('drv-' + d)?.checked);
   if(selectedDrives.length > 0) esObj.Drives = selectedDrives;
+  const selectedDevices = esDevices.map(d => d.path.trim()).filter(p => p);
+  if(selectedDevices.length > 0) esObj.Devices = selectedDevices;
   if(Object.keys(esObj).length > 0) vm.EnhancedSession = esObj;
 
   // Video Monitor
@@ -1692,7 +1769,8 @@ function buildConfig() {
   if(Object.keys(ciObj).length > 0) vm.ChipsetInformation = ciObj;
 
   // Policies
-  const activePolicies = POLICIES.filter(p => document.getElementById('pol-' + p)?.checked);
+  const activePolicies = POLICIES.concat(customPolicies)
+    .filter(p => document.getElementById('pol-' + p)?.checked);
   if(activePolicies.length > 0) vm.Policies = activePolicies;
 
   // Plan9 Shares
@@ -1736,7 +1814,27 @@ function highlight(json) {
 }
 
 // ── UPDATE PREVIEW ────────────────────────────────────────────────────────
+// Warnt, wenn ein eigener Share einen der Access Names belegt, die NanaBox bei
+// aktivem EnableHostDriverStore selbst vergibt.
+function checkReservedShareNames() {
+  const boxes = [document.getElementById('share-name-warning'),
+                 document.getElementById('gpu-share-name-warning')];
+  const enabled = document.getElementById('gpu-hostdriver').checked;
+  const clashes = enabled
+    ? p9Shares.concat(smbShares)
+        .map(sh => sh.name.trim())
+        .filter(n => RESERVED_SHARE_NAMES.some(r => r.toLowerCase() === n.toLowerCase()))
+    : [];
+  if(clashes.length === 0) { boxes.forEach(b => { b.style.display = 'none'; }); return; }
+  const unique = clashes.filter((n, i) => clashes.indexOf(n) === i);
+  const msg = '⚠️ Reservierter Access Name bei aktivem <strong>EnableHostDriverStore</strong>: '
+    + unique.map(n => '<strong>' + escHtml(n) + '</strong>').join(', ')
+    + ' – bitte umbenennen, sonst kollidiert der Share mit dem von NanaBox erzeugten.';
+  boxes.forEach(b => { b.innerHTML = msg; b.style.display = ''; });
+}
+
 function updatePreview() {
+  checkReservedShareNames();
   const cfg = buildConfig();
   const json = JSON.stringify(cfg, null, 2);
   document.getElementById('json-preview').innerHTML = highlight(json);
@@ -1870,6 +1968,9 @@ function showImportModal(cfg, filename) {
   if(vm.RuntimeStateFile) rows.push(row('RuntimeStateFile', vm.RuntimeStateFile));
   if(vm.Keyboard) rows.push(row('Keyboard', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
   if(vm.EnhancedSession) rows.push(row('Enhanced Session', 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'}));
+  if(vm.EnhancedSession && vm.EnhancedSession.Devices && vm.EnhancedSession.Devices.length) {
+    rows.push(row('  └ Devices', vm.EnhancedSession.Devices.length + ' Gerät(e)', {cls:'badge-ok',text:vm.EnhancedSession.Devices.length+'×'}));
+  }
   if(vm.VideoMonitor) rows.push(row('VideoMonitor', (vm.VideoMonitor.HorizontalResolution||'?') + '×' + (vm.VideoMonitor.VerticalResolution||'?')));
   if(vm.ChipsetInformation) { var ci = vm.ChipsetInformation; rows.push(row('Chipsatz', ((ci.Manufacturer||'')+' '+(ci.ProductName||'')).trim() || 'Konfiguriert', {cls:'badge-ok',text:'vorhanden'})); }
   if(vm.Policies && vm.Policies.length) rows.push(row('Policies', vm.Policies.join(', '), {cls:'badge-warn',text:vm.Policies.length+' aktiv'}));
@@ -1961,6 +2062,13 @@ function applyConfig(cfg) {
     var el = document.getElementById('drv-' + d);
     if(el) el.checked = Array.isArray(es.Drives) && es.Drives.indexOf(d) !== -1;
   });
+  esDevices = [];
+  if(Array.isArray(es.Devices)) {
+    es.Devices.forEach(function(p) {
+      if(typeof p === 'string') esDevices.push({id:Date.now()+Math.random(), path:p});
+    });
+  }
+  renderEsDevices();
   var vid = vm.VideoMonitor || {};
   setVal('vid-h', vid.HorizontalResolution != null ? vid.HorizontalResolution : '');
   setVal('vid-v', vid.VerticalResolution   != null ? vid.VerticalResolution   : '');
@@ -1976,9 +2084,14 @@ function applyConfig(cfg) {
   setVal('ci-cssn', ci.ChassisSerialNumber || '');
   setVal('ci-cat',  ci.ChassisAssetTag || '');
   setVal('ci-uuid', ci.UUID || '');
-  POLICIES.forEach(function(p) {
+  var importedPolicies = Array.isArray(vm.Policies) ? vm.Policies.filter(function(p) { return typeof p === 'string'; }) : [];
+  customPolicies = importedPolicies.filter(function(p, i) {
+    return POLICIES.indexOf(p) === -1 && importedPolicies.indexOf(p) === i;
+  });
+  renderPolicyGrid();
+  POLICIES.concat(customPolicies).forEach(function(p) {
     var el = document.getElementById('pol-' + p);
-    if(el) el.checked = Array.isArray(vm.Policies) && vm.Policies.indexOf(p) !== -1;
+    if(el) el.checked = importedPolicies.indexOf(p) !== -1;
   });
   p9Shares = [];
   if(Array.isArray(vm.Plan9Shares)) {
