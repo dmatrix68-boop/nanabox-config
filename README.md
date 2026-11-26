@@ -6,7 +6,7 @@
 
 A web-based configuration file generator for [NanaBox](https://github.com/M2Team/NanaBox) `.7b` virtual machine configuration files. The interface is available in **English and German** — switch with the EN/DE toggle in the header.
 
-Covers the full configuration reference as of **NanaBox 1.6 Update 5**.
+Covers the full configuration reference as of **NanaBox 2.0**. The `.7b` format has not changed since 1.6 Update 5: NanaBox 1.7 and 2.0 brought no new or changed configuration keys, so files created here also work with the new settings window in NanaBox 2.0.
 
 🔗 **Live:** https://dmatrix68-boop.github.io/nanabox-config/
 
@@ -95,7 +95,7 @@ MIT
 
 Ein webbasierter Generator für [NanaBox](https://github.com/M2Team/NanaBox)-Konfigurationsdateien im Format `.7b`. Die Oberfläche ist in **Englisch und Deutsch** verfügbar – umschaltbar über den EN/DE-Schalter in der Kopfzeile.
 
-Deckt die vollständige Konfigurationsreferenz mit Stand **NanaBox 1.6 Update 5** ab.
+Deckt die vollständige Konfigurationsreferenz mit Stand **NanaBox 2.0** ab. Das `.7b`-Format ist seit 1.6 Update 5 unverändert: NanaBox 1.7 und 2.0 haben keine neuen oder geänderten Konfigurationsschlüssel gebracht. Hier erzeugte Dateien lassen sich daher auch im neuen Einstellungsfenster von NanaBox 2.0 öffnen und bearbeiten.
 
 🔗 **Live:** https://dmatrix68-boop.github.io/nanabox-config/
 
